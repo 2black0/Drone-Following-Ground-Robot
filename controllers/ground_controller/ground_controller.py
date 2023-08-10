@@ -42,16 +42,17 @@ def run_robot(robot):
         
         key = robot.keyboard.getKey()
         
-        msg = "GPS_Value:"
-        for each_val in gps_value:
-            msg += " {0:0.5f}".format(each_val)
-        #print(msg)
-        
         if key == ord("Q"):
-            wheelFrontLeft.setVelocity(max_speed * 0.25)
-            wheelFrontRight.setVelocity(max_speed * 0.25)
-            wheelRearLeft.setVelocity(max_speed * 0.25)
-            wheelRearRight.setVelocity(max_speed * 0.25)
+            print("Ground Robot Run")
+            msg = "GPS_Value:"
+            for each_val in gps_value:
+                msg += " {0:0.5f}".format(each_val)
+            print(msg)
+            
+            wheelFrontLeft.setVelocity(max_speed * 0.5)
+            wheelFrontRight.setVelocity(max_speed * 0.5)
+            wheelRearLeft.setVelocity(max_speed * 0.5)
+            wheelRearRight.setVelocity(max_speed * 0.5)
         elif key == ord("Z"):
             wheelFrontLeft.setVelocity(0.0)
             wheelFrontRight.setVelocity(0.0)

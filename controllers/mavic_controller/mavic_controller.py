@@ -126,7 +126,7 @@ def run_robot(robot):
             print("Takeoff Run")
     
         if statusTakeoff == True:
-            altitudePID.setpoint = 2.25
+            altitudePID.setpoint = 5.00
             verticalInput = altitudePID(zPos)
             
             yawPID.setpoint = 0.00
