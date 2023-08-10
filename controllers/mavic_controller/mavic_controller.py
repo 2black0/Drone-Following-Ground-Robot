@@ -132,15 +132,15 @@ def run_robot(robot):
             yawPID.setpoint = 0.00
             yawInput = yawPID(heading)
             
-            yTarget = 2.0
+            yTarget = 0.0
             pitchError = clamp(yPos - yTarget, -1.5, 1.5)
             pitchPID.setpoint = 0.00
-            pitchInput = pitchPID(pitch) - yPos
+            pitchInput = pitchPID(pitch) - pitchError
             
-            xTarget = 2.0
+            xTarget = 0.0
             rollError = clamp(xPos - xTarget, -1.5, 1.5)
             rollPID.setpoint = 0.00
-            rollInput = rollPID(roll) - xPos
+            rollInput = rollPID(roll) - rollError
             
             motorInputFrontLeft = 68.5 + verticalInput - yawInput - pitchInput + rollInput
             motorInputFrontRight = 68.5 + verticalInput + yawInput - pitchInput - rollInput
