@@ -19,8 +19,8 @@ yawParameter = [0.5, 0.0075, 3]
 counter = 0
 
 xTarget = 0.0
-yTarget = 0.0
-altitudeTarget = 0.0
+ytarget = 0.0
+altituteTarget = 0.0
 rollTarget = 0.0
 pitchTarget = 0.0
 yawTarget = 0.0
@@ -42,10 +42,10 @@ statusAruco = False
 ################################################################
 # PID Controller
 ################################################################
-altitudePID = PID(float(altitudeParameter[0]), float(altitudeParameter[1]), float(altitudeParameter[2]), setpoint=float(altitudeTarget))    
-yawPID = PID(float(yawParameter[0]), float(yawParameter[1]), float(yawParameter[2]), setpoint=float(yawTarget))    
-pitchPID = PID(float(pitchParameter[0]), float(pitchParameter[1]), float(pitchParameter[2]), setpoint=float(pitchTarget))       
-rollPID = PID(float(yawParameter[0]), float(yawParameter[1]), float(yawParameter[2]), setpoint=float(yawTarget))
+altitudePID = PID(float(altitudeParameter[0], float(altitudeParameter[1], float(altitudeParameter[2]), setpoint=float(altituteTarget))    
+yawPID = PID(float(yawParameter[0], float(yawParameter[1], float(yawParameter[2]), setpoint=float(yawTarget))    
+pitchPID = PID(float(pitchParameter[0], float(pitchParameter[1], float(pitchParameter[2]), setpoint=float(pitchTarget))       
+rollPID = PID(float(yawParameter[0], float(yawParameter[1], float(yawParameter[2]), setpoint=float(yawTarget))
 
 def run_robot(robot):
     ################################################################
@@ -112,9 +112,21 @@ def run_robot(robot):
         ################################################################
         # Read all sensor
         ################################################################       
-        roll, pitch, yaw = robot.imu.getRollPitchYaw()
-        rollAccel, pitchAccel, yawAccel = robot.gyro.getValues()
-        xPos, yPos, altitudePos = robot.gps.getValues()
+        roll = ((robot.imu.getRollPitchYaw()[0] + math.pi / 2.0) * 180 / math.pi) - 90 #roll_right = positive; roll_left = negative
+        pitch = robot.imu.getRollPitchYaw()[1] * 180 / math.pi # nose_up = negative; nose_down = positive
+
+        rollAccel = robot.gyro.getValues()[0] * 180 / math.pi #roll_right = positive; roll_left = negative
+        pitchAccel = robot.gyro.getValues()[1] * 180 / math.pi # nose_up = positive; nose_down = negative
+
+        heading = math.atan2(robot.compass.getValues()[0], robot.compass.getValues()[1]) - (math.pi / 2)
+        if heading < -math.pi:
+            heading = heading + (2 * math.pi) # ccw = positive; cw = negative
+        heading = heading * 180 / math.pi
+        
+        xPos = robot.gps.getValues()[0] # forward = positive; backward = negative
+        yPos = robot.gps.getValues()[1] # left = positive; right = negative
+        zPos = robot.gps.getValues()[2] # up = positive; down = negative
+        
         image = np.frombuffer(robot.camera.getImage(), dtype=np.uint8).reshape((robot.camera.getHeight(), robot.camera.getWidth(), 4))
         
         cv2.imshow("Camera", image)
@@ -142,22 +154,28 @@ def run_robot(robot):
             print("Takeoff Run")
     
         if statusTakeoff == True:
-            rollError = clamp(-yPos + 0.06 + yTarget, -1.55, 1.55)
-            pitchError = clamp(-xPos - 0.13 + xTarget, -1.55, 1.55)
+            altitudePID.setpoint = 2.77
+            verticalInput = altitudePID(zPos)
             
-            yawPID.setpoint = yawTarget
-            yawInput = yawPID(yaw)
+            yawPID.setpoint = 0.00
+            yawInput = yawPID(heading)
             
-            altitudePID.setpoint = altitudeTarget
-            verticalInput = altitudePID(altitudePos)
+            yTarget = 0.00
+            pitchError = clamp(yPos - yTarget, -1.55, 1.55)
+            pitchPID.setpoint = 0.00
+            pitchPIDValue = pitchPID(pitch)
+            pitchInput = pitchPIDValue - pitchError
             
-            rollInput = rollPID(roll) + rollError
-            pitchInput = pitchPID(pitch) - pitchError
+            xTarget = 1.00
+            rollError = clamp(xPos - xTarget, -1.55, 1.55)
+            rollPID.setpoint = 0.00
+            rollPIDValue = rollPID(roll)
+            rollInput = rollPIDValue - rollError
             
-            motorInputFrontLeft = verticalThrust + verticalInput - yawInput + pitchInput - rollInput
-            motorInputFrontRight = verticalThrust + verticalInput + yawInput + pitchInput + rollInput
-            motorInputBackLeft = verticalThrust + verticalInput + yawInput - pitchInput - rollInput
-            motorInputBackRight = verticalThrust + verticalInput - yawInput - pitchInput + rollInput
+            motorInputFrontLeft = 68.5 + verticalInput - yawInput - pitchInput + rollInput
+            motorInputFrontRight = 68.5 + verticalInput + yawInput - pitchInput - rollInput
+            motorInputBackLeft = 68.5 + verticalInput + yawInput + pitchInput + rollInput
+            motorInputBackRight = 68.5 + verticalInput - yawInput + pitchInput - rollInput
             
             #print("RollE={:+.2f}|RollPID={:+.2f}|rollInput={:+.2f}|PitchE={:+.2f}|PitchPID={:+.2f}|pitchInput={:+.2f}".format(rollError, rollPIDValue, rollInput, pitchError, pitchPIDValue, pitchInput))
             #print("rollInput={:+.2f}|pitchInput={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(rollInput, pitchInput, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))

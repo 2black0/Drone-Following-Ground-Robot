@@ -213,7 +213,7 @@ Robot {
 Mavic2Pro {
   translation 0 0 0.182536
   rotation 0 0 1 1.57888
-  controller "mavic_controller"
+  controller "mavic2_controller"
   customData "0"
   bodySlot [
     GPS {

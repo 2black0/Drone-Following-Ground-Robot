@@ -45,10 +45,6 @@ Floor {
   appearance SandyGround {
   }
 }
-Robot {
-  controller "mavic_supervisor"
-  supervisor TRUE
-}
 Road {
   translation -43.8 9.2 0.01
   rotation 0 0 1 -0.3926996938995747
@@ -201,9 +197,8 @@ Forest {
 DEF drone Mavic2Pro {
   translation 0.149637 0.0700009 0.110455
   rotation 1.9179399918607775e-05 -0.9999999957562684 9.010889961760201e-05 0.069742
-  controller "mavic_controller"
+  controller "mavic2_controller"
   customData "0"
-  supervisor TRUE
   cameraSlot [
     Camera {
       rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
