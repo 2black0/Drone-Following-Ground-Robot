@@ -14,8 +14,8 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.18395751011602873 0.10360080136103803 0.9774592106217332 2.1351794736585
-  position 7.414833097330736 -10.679229269383008 7.228298379524502
+  orientation -0.22800680889002 0.09183714719809945 0.9693187471076293 2.3971559146743573
+  position 1.8616435938713776 -1.558138425622659 1.4186047465234202
   follow "Mavic 2 PRO"
   followType "None"
 }
@@ -29,8 +29,8 @@ Floor {
   }
 }
 Robot {
-  translation 4.641877145252289e-07 -3.489537444586903e-06 0.03990488411067251
-  rotation 2.3547309490055657e-05 -2.4829901147391106e-05 0.9999999994145002 1.5721000141724384
+  translation 0 0 0.0520842
+  rotation 0 0 1 1.5788812805631136
   children [
     GPS {
       translation 0 0 0.005
@@ -49,6 +49,7 @@ Robot {
           ]
         }
       ]
+      name "gps_ground"
     }
     DEF BODY Shape {
       appearance PBRAppearance {
@@ -67,7 +68,7 @@ Robot {
     }
     DEF WHEEL1 HingeJoint {
       jointParameters HingeJointParameters {
-        position 9.347513871526907e-09
+        position -0.1434581245247754
         axis 0 1 0
         anchor 0.18 0.26 0
       }
@@ -78,7 +79,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 0.26 0
-        rotation 1 4.673739846631692e-09 -4.673759173141099e-09 1.5707999999999882
+        rotation 0.9948769011186247 -0.07148396351848554 0.0714842260942244 1.5759362443140381
         children [
           DEF WHEEL Shape {
             appearance PBRAppearance {
@@ -100,7 +101,7 @@ Robot {
     }
     DEF WHEEL2 HingeJoint {
       jointParameters HingeJointParameters {
-        position 1.0049746295156312e-08
+        position -0.1826447995228828
         axis 0 1 0
         anchor 0.18 -0.26 0
       }
@@ -111,7 +112,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 -0.26 0
-        rotation 1 5.024852609853765e-09 -5.0248726372990465e-09 1.570799999999983
+        rotation 0.9917177048329069 -0.09081831678627016 0.09081865038118442 1.5791166879339338
         children [
           USE WHEEL
         ]
@@ -123,7 +124,7 @@ Robot {
     }
     DEF WHEEL3 HingeJoint {
       jointParameters HingeJointParameters {
-        position -1.183077672291902e-08
+        position -3.762933256196769e-08
         axis 0 1 0
         anchor -0.18 0.26 0
       }
@@ -134,7 +135,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 0.26 0
-        rotation 1 -5.915368085397658e-09 5.915389028747579e-09 1.5707999999999829
+        rotation 0.9999999999999996 -1.881459862331575e-08 1.8814666948271903e-08 1.5707999999999829
         children [
           USE WHEEL
         ]
@@ -146,7 +147,7 @@ Robot {
     }
     DEF WHEEL4 HingeJoint {
       jointParameters HingeJointParameters {
-        position -1.1689693413617427e-08
+        position -3.701531388630144e-08
         axis 0 1 0
         anchor -0.18 -0.26 0
       }
@@ -157,7 +158,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 -0.26 0
-        rotation 1 -5.84482457023939e-09 5.844847256340065e-09 1.5707999999999889
+        rotation 0.9999999999999996 -1.850758829356777e-08 1.8507657492682063e-08 1.570799999999989
         children [
           USE WHEEL
         ]
@@ -210,11 +211,15 @@ Robot {
   controller "ground_controller"
 }
 Mavic2Pro {
-  translation -0.0036604558154140618 -0.00388180705142184 0.13061341999800044
-  rotation 0.034866837649953714 -0.034873636445395526 0.99878332640937 1.5718223595472822
+  translation 0 0 0.182536
+  rotation 0 0 1 1.57888
   controller "mavic_controller"
   customData "0"
-  supervisor TRUE
+  bodySlot [
+    GPS {
+      name "gpss"
+    }
+  ]
   cameraSlot [
     Camera {
       width 400

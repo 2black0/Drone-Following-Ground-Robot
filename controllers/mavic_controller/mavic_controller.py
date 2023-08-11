@@ -27,18 +27,18 @@ def run_robot(robot):
     robot.motorFrontRight.setPosition(float('inf'))
     robot.motorBackLeft.setPosition(float('inf'))
     robot.motorBackRight.setPosition(float('inf'))
-    robot.motorFrontLeft.setVelocity(0.0)
-    robot.motorFrontRight.setVelocity(0.0)
-    robot.motorBackLeft.setVelocity(0.0)
-    robot.motorBackRight.setVelocity(0.0)
+    robot.motorFrontLeft.setVelocity(0.00)
+    robot.motorFrontRight.setVelocity(0.00)
+    robot.motorBackLeft.setVelocity(0.00)
+    robot.motorBackRight.setVelocity(0.00)
     
     # Gimbal
     robot.gimbalRoll = robot.getDevice("camera roll")
     robot.gimbaPitch = robot.getDevice("camera pitch")
     robot.gimbalYaw = robot.getDevice("camera yaw")
-    robot.gimbalRoll.setPosition(0.0)
-    robot.gimbaPitch.setPosition(0.0)
-    robot.gimbalYaw.setPosition(0.0)
+    robot.gimbalRoll.setPosition(0.00)
+    robot.gimbaPitch.setPosition(0.00)
+    robot.gimbalYaw.setPosition(0.00)
     
     # IMU
     robot.imu = robot.getDevice("inertial unit")    
@@ -64,9 +64,8 @@ def run_robot(robot):
     ################################################################
     # PID Controller
     ################################################################
-    altitudePID = PID(3, 0.05, 9, setpoint=0.00)    
+    altitudePID = PID(3, 0.05, 4, setpoint=0.00)    
     yawPID = PID(0.03, 0, 0.015, setpoint=0.00)    
-    #pitchPID = PID(0.1, 0.08, 0.018, setpoint=0.00)
     pitchPID = PID(0.2, 0.07, 0.04, setpoint=0.00)       
     rollPID = PID(0.095, 0.05, 0.012, setpoint=0.00)
     
@@ -126,7 +125,7 @@ def run_robot(robot):
             print("Takeoff Run")
     
         if statusTakeoff == True:
-            altitudePID.setpoint = 5.00
+            altitudePID.setpoint = 3.00
             verticalInput = altitudePID(zPos)
             
             yawPID.setpoint = 0.00
@@ -135,18 +134,22 @@ def run_robot(robot):
             yTarget = 0.0
             pitchError = clamp(yPos - yTarget, -1.5, 1.5)
             pitchPID.setpoint = 0.00
-            pitchInput = pitchPID(pitch) - pitchError
+            pitchPIDValue = pitchPID(pitch)
+            pitchInput = pitchPIDValue - pitchError
             
             xTarget = 0.0
             rollError = clamp(xPos - xTarget, -1.5, 1.5)
             rollPID.setpoint = 0.00
-            rollInput = rollPID(roll) - rollError
+            rollPIDValue = rollPID(roll)
+            rollInput = rollPIDValue - rollError
             
             motorInputFrontLeft = 68.5 + verticalInput - yawInput - pitchInput + rollInput
             motorInputFrontRight = 68.5 + verticalInput + yawInput - pitchInput - rollInput
             motorInputBackLeft = 68.5 + verticalInput + yawInput + pitchInput + rollInput
             motorInputBackRight = 68.5 + verticalInput - yawInput + pitchInput - rollInput
             
+            #print("RollE={:+.2f}|RollPID={:+.2f}|rollInput={:+.2f}|PitchE={:+.2f}|PitchPID={:+.2f}|pitchInput={:+.2f}".format(rollError, rollPIDValue, rollInput, pitchError, pitchPIDValue, pitchInput))
+            #print("rollInput={:+.2f}|pitchInput={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(rollInput, pitchInput, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))
             print("roll={:+.2f}|rollA={:+.2f}|pitch={:+.2f}|pitchA={:+.2f}|head={:+.2f}|x={:+.2f}|y={:+.2f}|z={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(roll, rollAccel, pitch, pitchAccel, heading, xPos, yPos, zPos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))
             
         elif statusTakeoff == False:
