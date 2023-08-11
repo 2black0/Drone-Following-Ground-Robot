@@ -125,20 +125,20 @@ def run_robot(robot):
             print("Takeoff Run")
     
         if statusTakeoff == True:
-            altitudePID.setpoint = 3.00
+            altitudePID.setpoint = 2.77
             verticalInput = altitudePID(zPos)
             
             yawPID.setpoint = 0.00
             yawInput = yawPID(heading)
             
-            yTarget = 0.0
-            pitchError = clamp(yPos - yTarget, -1.5, 1.5)
+            yTarget = 0.00
+            pitchError = clamp(yPos - yTarget, -1.55, 1.55)
             pitchPID.setpoint = 0.00
             pitchPIDValue = pitchPID(pitch)
             pitchInput = pitchPIDValue - pitchError
             
-            xTarget = 0.0
-            rollError = clamp(xPos - xTarget, -1.5, 1.5)
+            xTarget = 1.00
+            rollError = clamp(xPos - xTarget, -1.55, 1.55)
             rollPID.setpoint = 0.00
             rollPIDValue = rollPID(roll)
             rollInput = rollPIDValue - rollError
