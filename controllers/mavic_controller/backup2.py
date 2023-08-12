@@ -3,55 +3,72 @@ from simple_pid import PID
 import numpy as np
 import cv2
 from cv2 import aruco
-import math
 
 def clamp(value, value_min, value_max):
     return min(max(value, value_min), value_max)
 
-verticalThrust = 68.5
-xParameter = [2, 2, 4]
-yParameter = [1.5, 2, 3]
-altitudeParameter = [4, 0.05, 10]
-rollParameter = [45, 1, 7]
-pitchParameter = [35, 1, 7]
-yawParameter = [0.5, 0.0075, 3]
-
-counter = 0
-
-xTarget = 0.0
-ytarget = 0.0
-altituteTarget = 0.0
-rollTarget = 0.0
-pitchTarget = 0.0
-yawTarget = 0.0
-
-xTargetMarker = 0.0
-yTargetMarker = 0.0
-altitudeTargetMarker = 0.0
-
-rollGimbal = 0.0
-pitchGimbal = 0.0
-yawGimbal = 0.0
-
-statusTakeoff = False
-statusLanding = False
-statusGimbal = False
-statusHome = False
-statusAruco = False
-
-################################################################
-# PID Controller
-################################################################
-altitudePID = PID(float(altitudeParameter[0], float(altitudeParameter[1], float(altitudeParameter[2]), setpoint=float(altituteTarget))    
-yawPID = PID(float(yawParameter[0], float(yawParameter[1], float(yawParameter[2]), setpoint=float(yawTarget))    
-pitchPID = PID(float(pitchParameter[0], float(pitchParameter[1], float(pitchParameter[2]), setpoint=float(pitchTarget))       
-rollPID = PID(float(yawParameter[0], float(yawParameter[1], float(yawParameter[2]), setpoint=float(yawTarget))
+def find_aruco(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    arucoDict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+    arucoParameters = aruco.DetectorParameters_create()
+    arucoCorner, arucoId, arucoReject = aruco.detectMarkers(gray, arucoDict, parameters=arucoParameters)
+    return arucoCorner, arucoId, arucoReject
 
 def run_robot(robot):
     ################################################################
     ## initialize all
     ################################################################
-    timestep = robot.getBasicTimeStep()
+    timestep = int(robot.getBasicTimeStep())
+    
+    verticalThrust = 68.5
+    
+    xParameter = [0.3, 0.12, 0.25]
+    yParameter = [0.3, 0.1, 0.21]
+    altitudeParameter = [0.6, 0.04, 0.15]
+    rollParameter = [2.1, 1.1, 1.1]
+    pitchParameter = [2.5, 1.5, 1.2]
+    yawParameter = [0.55, 0.0008, 3]
+
+    xTarget = 0.00
+    yTarget = 0.00
+    altitudeTarget = 3.00
+    rollTarget = 0.00
+    pitchTarget = 0.00
+    yawTarget = 0.00
+
+    xTargetMarker = 0.00
+    yTargetMarker = 0.00
+    altitudeTargetMarker = 0.00
+
+    rollGimbal = 0.00
+    pitchGimbal = 0.00
+    yawGimbal = 0.00
+
+    statusTakeoff = False
+    statusLanding = False
+    statusGimbal = False
+    statusHome = False
+    statusAruco = False
+
+    maxSpeed = 576
+    motorMultiplier = 1.00
+
+    ################################################################
+    # PID Controller
+    ################################################################
+    xPID = PID(float(xParameter[0]), float(xParameter[1]), float(xParameter[2]), setpoint=float(xTarget))
+    yPID = PID(float(yParameter[0]), float(yParameter[1]), float(yParameter[2]), setpoint=float(yTarget))
+    altitudePID = PID(float(altitudeParameter[0]), float(altitudeParameter[1]), float(altitudeParameter[2]), setpoint=float(altitudeTarget))
+    yPID.output_limits = (-0.5, 0.5)
+    xPID.output_limits = (-0.5, 0.5)
+    altitudePID.output_limits = (-1.5, 1.5)
+    
+    rollPID = PID(float(rollParameter[0]), float(rollParameter[1]), float(rollParameter[2]), setpoint=float(rollTarget))
+    pitchPID = PID(float(pitchParameter[0]), float(pitchParameter[1]), float(pitchParameter[2]), setpoint=float(pitchTarget))       
+    yawPID = PID(float(yawParameter[0]), float(yawParameter[1]), float(yawParameter[2]), setpoint=float(yawTarget))
+    rollPID.output_limits = (-1.5, 1.5)
+    pitchPID.output_limits = (-1.5, 1.5)
+    yawPID.output_limits = (-1.5, 1.5)
     
     # Keyboard
     robot.keyboard = robot.getKeyboard()
@@ -66,10 +83,10 @@ def run_robot(robot):
     robot.motorFrontRight.setPosition(float('inf'))
     robot.motorBackLeft.setPosition(float('inf'))
     robot.motorBackRight.setPosition(float('inf'))
-    robot.motorFrontLeft.setVelocity(0.00)
-    robot.motorFrontRight.setVelocity(0.00)
-    robot.motorBackLeft.setVelocity(0.00)
-    robot.motorBackRight.setVelocity(0.00)
+    #robot.motorFrontLeft.setVelocity(0.00)
+    #robot.motorFrontRight.setVelocity(0.00)
+    #robot.motorBackLeft.setVelocity(0.00)
+    #robot.motorBackRight.setVelocity(0.00)
     
     # Gimbal
     robot.gimbalRoll = robot.getDevice("camera roll")
@@ -98,40 +115,24 @@ def run_robot(robot):
     # Camera
     robot.camera = robot.getDevice("camera")
     robot.camera.enable(timestep)
+    cameraWidth = int(robot.camera.getWidth())  # 800
+    cameraHeight = int(robot.camera.getHeight())  # 480
     ################################################################
     
     ################################################################
     # Main loop:
     ################################################################
-    while robot.step(timestep) != -1:
-        maxSpeed = 576
-        motorMultiplier = 1
-        
+    while robot.step(timestep) != -1:      
         key = robot.keyboard.getKey()
         
         ################################################################
         # Read all sensor
         ################################################################       
-        roll = ((robot.imu.getRollPitchYaw()[0] + math.pi / 2.0) * 180 / math.pi) - 90 #roll_right = positive; roll_left = negative
-        pitch = robot.imu.getRollPitchYaw()[1] * 180 / math.pi # nose_up = negative; nose_down = positive
-
-        rollAccel = robot.gyro.getValues()[0] * 180 / math.pi #roll_right = positive; roll_left = negative
-        pitchAccel = robot.gyro.getValues()[1] * 180 / math.pi # nose_up = positive; nose_down = negative
-
-        heading = math.atan2(robot.compass.getValues()[0], robot.compass.getValues()[1]) - (math.pi / 2)
-        if heading < -math.pi:
-            heading = heading + (2 * math.pi) # ccw = positive; cw = negative
-        heading = heading * 180 / math.pi
-        
-        xPos = robot.gps.getValues()[0] # forward = positive; backward = negative
-        yPos = robot.gps.getValues()[1] # left = positive; right = negative
-        zPos = robot.gps.getValues()[2] # up = positive; down = negative
-        
+        roll, pitch, yaw = robot.imu.getRollPitchYaw()
+        #rollAccel, pitchAccel, yawAccel = robot.gyro.getValues()
+        xPos, yPos, altitudePos = robot.gps.getValues()
         image = np.frombuffer(robot.camera.getImage(), dtype=np.uint8).reshape((robot.camera.getHeight(), robot.camera.getWidth(), 4))
-        
-        cv2.imshow("Camera", image)
-        cv2.waitKey(1)
-        
+               
         ################################################################
         # Drone Motor Test
         ################################################################    
@@ -141,56 +142,104 @@ def run_robot(robot):
             robot.motorBackLeft.setVelocity(-maxSpeed * motorMultiplier)
             robot.motorBackRight.setVelocity(maxSpeed * motorMultiplier)
             print("Motor Test")
+        
         elif key == ord('2'):
             robot.gimbalRoll.setPosition(0.0) # min = -0.5, max = 0.5
             robot.gimbaPitch.setPosition(1.6) # min = -0.5, max = 1.7
             robot.gimbalYaw.setPosition(0.0) # min = -1.7, max = 1.7
             print("Gimbal Test")
+        
         elif key == ord('3'):
             statusTakeoff = True
             print("Takeoff Run")
+       
         elif key == ord('4'):
             statusTakeoff = False
-            print("Takeoff Run")
+            print("All Motor Stop")
+        
+        elif key == ord('5'):
+            statusAruco = True
+            print("Aruco Detection Run")
+        
+        elif key == ord('6'):
+            statusAruco = False
+            print("Aruco Detection Stop")
     
         if statusTakeoff == True:
-            altitudePID.setpoint = 2.77
-            verticalInput = altitudePID(zPos)
+            xPosMarker = 0.00
+            yPosMarker = 0.00
             
             yawPID.setpoint = 0.00
-            yawInput = yawPID(heading)
+            altitudePID.setpoint = 3.10
+            yPID.setpoint = 0.00
+            xPID.setpoint = 0.00
             
-            yTarget = 0.00
-            pitchError = clamp(yPos - yTarget, -1.55, 1.55)
-            pitchPID.setpoint = 0.00
-            pitchPIDValue = pitchPID(pitch)
-            pitchInput = pitchPIDValue - pitchError
+            yPIDValue = 0.00 #yPID(yPos)
+            xPIDValue = 0.00 # xPID(xPos)
             
-            xTarget = 1.00
-            rollError = clamp(xPos - xTarget, -1.55, 1.55)
-            rollPID.setpoint = 0.00
-            rollPIDValue = rollPID(roll)
-            rollInput = rollPIDValue - rollError
+            if statusAruco == True:
+                arucoCorner, arucoId, _ = find_aruco(image)
+                if arucoId is not None:
+                    image = cv2.line(image, (int(cameraWidth / 2), cameraHeight), (int(cameraWidth / 2), 0), (255, 255, 0), 1)
+                    image = cv2.line(image, (0, int(cameraHeight / 2)), (cameraWidth, int(cameraHeight / 2)), (255, 255, 0), 1)
+                    arucoId = arucoId.flatten()
+                    
+                    for(markerCorner, markerId) in zip(arucoCorner, arucoId):
+                        corners = markerCorner.reshape((4, 2))
+                        (topLeft, topRight, bottomRight, bottomLeft) = corners
+                        
+                        topRight = (int(topRight[0]), int(topRight[1]))
+                        bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+                        bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+                        topLeft = (int(topLeft[0]), int(topLeft[1]))
+
+                        shapes = image.copy()
+                        cv2.rectangle(shapes, topLeft, bottomRight, (0, 255, 0), -1)
+                        alpha = 0.4
+                        image = cv2.addWeighted(shapes, alpha, image, 1 - alpha, 0)
+
+                        cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                        cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                        cv2.circle(image, (cX, cY), 4, (0, 0, 255), -1)
+                        #xTargetMarker = -cY / 350
+                        #yTargetMarker = -cX / 500
+                        #print("xPosMarker={:+.2f}|yPosMarker={:+.2f}".format(xPosMarker, yPosMarker))
+
+                        xTargetMarker = 0.2 * ((cY - (cameraHeight / 2)) / cameraHeight) # -0.4
+                        yTargetMarker = -0.35 * ((cX - (cameraWidth / 2)) / cameraWidth) # -0.45
+                        #print("xTargetMarker={:+.2f}|yTargetMarker={:+.2f}".format(xTargetMarker, yTargetMarker))
+                        
+                        xPIDValue = clamp(xTargetMarker, -1.5, 1.5)
+                        yPIDValue = clamp(yTargetMarker, -1.5, 1.5)
+            else:
+                xPIDValue = xPID(xPos)
+                yPIDValue = yPID(yPos)
+                
+            yawInput = yawPID(yaw)
+            verticalInput = altitudePID(altitudePos)
+            rollInput = rollPID(roll) - yPIDValue
+            pitchInput = pitchPID(pitch) + xPIDValue
             
-            motorInputFrontLeft = 68.5 + verticalInput - yawInput - pitchInput + rollInput
-            motorInputFrontRight = 68.5 + verticalInput + yawInput - pitchInput - rollInput
-            motorInputBackLeft = 68.5 + verticalInput + yawInput + pitchInput + rollInput
-            motorInputBackRight = 68.5 + verticalInput - yawInput + pitchInput - rollInput
+            motorInputFrontLeft = verticalThrust + verticalInput - yawInput - pitchInput + rollInput
+            motorInputFrontRight = verticalThrust + verticalInput + yawInput - pitchInput - rollInput
+            motorInputBackLeft = verticalThrust + verticalInput + yawInput + pitchInput + rollInput
+            motorInputBackRight = verticalThrust + verticalInput - yawInput + pitchInput - rollInput
             
-            #print("RollE={:+.2f}|RollPID={:+.2f}|rollInput={:+.2f}|PitchE={:+.2f}|PitchPID={:+.2f}|pitchInput={:+.2f}".format(rollError, rollPIDValue, rollInput, pitchError, pitchPIDValue, pitchInput))
-            #print("rollInput={:+.2f}|pitchInput={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(rollInput, pitchInput, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))
-            print("roll={:+.2f}|rollA={:+.2f}|pitch={:+.2f}|pitchA={:+.2f}|head={:+.2f}|x={:+.2f}|y={:+.2f}|z={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(roll, rollAccel, pitch, pitchAccel, heading, xPos, yPos, zPos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))
+            print("roll={:+.2f}|pitch={:+.2f}|yaw={:+.2f}|xPos={:+.2f}|yPos={:+.2f}|altitudePos={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}|xPosMarker={:+.2f}|yPosMarker={:+.2f}".format(roll, pitch, yaw, xPos, yPos, altitudePos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight, xPosMarker, yPosMarker))
             
         elif statusTakeoff == False:
             motorInputFrontLeft = 0
             motorInputFrontRight = 0
             motorInputBackLeft = 0
             motorInputBackRight = 0
-        
-        robot.motorFrontLeft.setVelocity(motorInputFrontLeft)
-        robot.motorFrontRight.setVelocity(-motorInputFrontRight)
-        robot.motorBackLeft.setVelocity(-motorInputBackLeft)
-        robot.motorBackRight.setVelocity(motorInputBackRight)
+                    
+        cv2.imshow("Camera", image)
+        cv2.waitKey(1)
+                
+        robot.motorFrontLeft.setVelocity(clamp(motorInputFrontLeft, -576, 576))
+        robot.motorFrontRight.setVelocity(clamp(-motorInputFrontRight, -576, 576))
+        robot.motorBackLeft.setVelocity(clamp(-motorInputBackLeft, -576, 576))
+        robot.motorBackRight.setVelocity(clamp(motorInputBackRight, -576, 576))
         
     cv2.destroyAllWindows()
     

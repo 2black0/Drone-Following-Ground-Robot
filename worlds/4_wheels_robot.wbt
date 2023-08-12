@@ -14,8 +14,8 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.20811381519952538 0.8973281858449378 0.38921814810120375 1.0747781128641571
-  position -11.879399344953814 -6.692337270083214 25.44095409866452
+  orientation -0.16441195249034138 0.7605679283593586 0.6280964386377839 0.6629548685257637
+  position -37.36795567035433 -20.09272460024777 27.968649084273117
   followType "None"
 }
 TexturedBackground {
@@ -23,13 +23,19 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 Floor {
-  size 15 15
+  size 50 50
   appearance SandyGround {
   }
 }
 Robot {
-  translation 4.641877145252289e-07 -3.489537444586903e-06 0.03990488411067251
+  translation 0 0 0.0399049
   children [
+    Receiver {
+      name "receiver_ground"
+    }
+    Emitter {
+      name "emitter_ground"
+    }
     GPS {
       translation 0 0 0.005
       children [
@@ -54,7 +60,7 @@ Robot {
         baseColor 0.917647 0.917647 0.917647
         baseColorMap ImageTexture {
           url [
-            "textures/6x6_1000-0.png"
+            "textures/4x4_1000-0 (Custom).png"
           ]
         }
         roughness 1
@@ -77,7 +83,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 0.26 0
-        rotation 1 4.673739846631692e-09 -4.673759173141099e-09 1.5707999999999882
+        rotation 1 4.871026233501893e-09 -4.871047169352938e-09 1.5707999999999502
         children [
           DEF WHEEL Shape {
             appearance PBRAppearance {
@@ -110,7 +116,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 -0.26 0
-        rotation 1 5.024852609853765e-09 -5.0248726372990465e-09 1.570799999999983
+        rotation 1 5.0248542977002495e-09 -5.024872755055763e-09 1.570799999999945
         children [
           USE WHEEL
         ]
@@ -133,7 +139,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 0.26 0
-        rotation 1 -5.915368085397658e-09 5.915389028747579e-09 1.5707999999999829
+        rotation 1 -6.16166485760548e-09 6.161687292540311e-09 1.5707999999999513
         children [
           USE WHEEL
         ]
@@ -156,7 +162,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 -0.26 0
-        rotation 1 -5.844824570239391e-09 5.844847256340066e-09 1.5707999999999886
+        rotation 1 -5.84482405996045e-09 5.844847491853501e-09 1.570799999999959
         children [
           USE WHEEL
         ]
@@ -207,6 +213,7 @@ Robot {
     mass 1
   }
   controller "ground_controller"
+  supervisor TRUE
 }
 Mavic2Pro {
   translation 0 0 0.135
@@ -214,7 +221,7 @@ Mavic2Pro {
   cameraSlot [
     Camera {
       width 800
-      height 420
+      height 600
       exposure 5
       antiAliasing TRUE
     }

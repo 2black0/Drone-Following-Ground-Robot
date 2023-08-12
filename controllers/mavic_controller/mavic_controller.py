@@ -1,48 +1,73 @@
-from controller import Robot, Keyboard
+from tracemalloc import start
+from controller import Robot, Keyboard, Receiver
 from simple_pid import PID
+from time import sleep
 import numpy as np
 import cv2
 from cv2 import aruco
+from csv_logger import CsvLogger
+import json
+
+filename = "logger.csv"
+header = [
+    "time",
+    "counter",
+    "roll",
+    "pitch",
+    "yaw",
+    "rollAccel",
+    "pitchAccel",
+    "yawAccel",
+    "xPosition",
+    "yPosition",
+    "altitude",
+    "rollError",
+    "pitchError",
+    "rollInput",
+    "pitchInput",
+    "yawInput",
+    "verticalInput",
+    "motorFrontLeftInput",
+    "motorFrontRightInput",
+    "motorRearLeftInput",
+    "motorRearRightInput",
+    "Speed_X",
+    "Speed_Y",
+    "Speed_Z",
+    "statusTakeoff",
+    "statusHome",
+    "statusAruco",
+    "statusLanding",
+]
+csvlogger = CsvLogger(filename=filename, header=header)
+
 
 def clamp(value, value_min, value_max):
     return min(max(value, value_min), value_max)
 
-def find_aruco(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    arucoDict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-    arucoParameters = aruco.DetectorParameters_create()
-    arucoCorner, arucoId, arucoReject = aruco.detectMarkers(gray, arucoDict, parameters=arucoParameters)
-    return arucoCorner, arucoId, arucoReject
 
-def run_robot(robot):
-    ################################################################
-    ## initialize all
-    ################################################################
-    timestep = int(robot.getBasicTimeStep())
-    
+class Mavic(Robot):
     verticalThrust = 68.5
-    
-    xParameter = [0.3, 0.12, 0.25]
-    yParameter = [0.3, 0.1, 0.21]
-    altitudeParameter = [0.6, 0.04, 0.15]
-    rollParameter = [2.1, 1.1, 1.1]
-    pitchParameter = [2.5, 1.5, 1.2]
-    yawParameter = [0.55, 0.0008, 3]
+    xPIDParameter = [2, 2, 4]
+    yPIDParameter = [1.5, 2, 3]
+    altitudePIDParameter = [4, 0.05, 10]
+    rollPIDParameter = [45, 1, 7]
+    pitchPIDParameter = [35, 1, 7]
+    yawPIDParameter = [0.5, 0.0075, 3]
 
-    xTarget = 0.00
-    yTarget = 0.00
-    altitudeTarget = 3.00
-    rollTarget = 0.00
-    pitchTarget = 0.00
-    yawTarget = 0.00
+    counter = 0
 
-    xTargetMarker = 0.00
-    yTargetMarker = 0.00
-    altitudeTargetMarker = 0.00
+    xTarget = 0.0
+    yTarget = 0.0
+    yawTarget = 0.0
+    altitudeTarget = 0.0
 
-    rollGimbal = 0.00
-    pitchGimbal = 0.00
-    yawGimbal = 0.00
+    xTargetAruco = 0.0
+    yTargetAruco = 0.0
+
+    rollAngleGimbal = 0.0
+    pitchAngleGimbal = 0.0
+    yawAngleGimbal = 0.0
 
     statusTakeoff = False
     statusLanding = False
@@ -50,195 +75,333 @@ def run_robot(robot):
     statusHome = False
     statusAruco = False
 
-    maxSpeed = 576
-    motorMultiplier = 1.00
+    statusHomeA = False
+    statusHomeB = False
+    statusHomeC = False
 
-    ################################################################
-    # PID Controller
-    ################################################################
-    xPID = PID(float(xParameter[0]), float(xParameter[1]), float(xParameter[2]), setpoint=float(xTarget))
-    yPID = PID(float(yParameter[0]), float(yParameter[1]), float(yParameter[2]), setpoint=float(yTarget))
-    altitudePID = PID(float(altitudeParameter[0]), float(altitudeParameter[1]), float(altitudeParameter[2]), setpoint=float(altitudeTarget))
-    yPID.output_limits = (-0.5, 0.5)
-    xPID.output_limits = (-0.5, 0.5)
-    altitudePID.output_limits = (-1.5, 1.5)
-    
-    rollPID = PID(float(rollParameter[0]), float(rollParameter[1]), float(rollParameter[2]), setpoint=float(rollTarget))
-    pitchPID = PID(float(pitchParameter[0]), float(pitchParameter[1]), float(pitchParameter[2]), setpoint=float(pitchTarget))       
-    yawPID = PID(float(yawParameter[0]), float(yawParameter[1]), float(yawParameter[2]), setpoint=float(yawTarget))
-    rollPID.output_limits = (-1.5, 1.5)
-    pitchPID.output_limits = (-1.5, 1.5)
-    yawPID.output_limits = (-1.5, 1.5)
-    
-    # Keyboard
-    robot.keyboard = robot.getKeyboard()
-    robot.keyboard.enable(10 * timestep)
-    
-    # Motor
-    robot.motorFrontLeft = robot.getDevice("front left propeller")
-    robot.motorFrontRight = robot.getDevice("front right propeller")
-    robot.motorBackLeft = robot.getDevice("rear left propeller")
-    robot.motorBackRight = robot.getDevice("rear right propeller")
-    robot.motorFrontLeft.setPosition(float('inf'))
-    robot.motorFrontRight.setPosition(float('inf'))
-    robot.motorBackLeft.setPosition(float('inf'))
-    robot.motorBackRight.setPosition(float('inf'))
-    #robot.motorFrontLeft.setVelocity(0.00)
-    #robot.motorFrontRight.setVelocity(0.00)
-    #robot.motorBackLeft.setVelocity(0.00)
-    #robot.motorBackRight.setVelocity(0.00)
-    
-    # Gimbal
-    robot.gimbalRoll = robot.getDevice("camera roll")
-    robot.gimbaPitch = robot.getDevice("camera pitch")
-    robot.gimbalYaw = robot.getDevice("camera yaw")
-    robot.gimbalRoll.setPosition(0.00)
-    robot.gimbaPitch.setPosition(0.00)
-    robot.gimbalYaw.setPosition(0.00)
-    
-    # IMU
-    robot.imu = robot.getDevice("inertial unit")    
-    robot.imu.enable(timestep)
-    
-    # Gyro
-    robot.gyro = robot.getDevice("gyro")
-    robot.gyro.enable(timestep)
-    
-    # Compass
-    robot.compass = robot.getDevice("compass")
-    robot.compass.enable(timestep)
-    
-    # GPS
-    robot.gps = robot.getDevice("gps")
-    robot.gps.enable(timestep)
-    
-    # Camera
-    robot.camera = robot.getDevice("camera")
-    robot.camera.enable(timestep)
-    cameraWidth = int(robot.camera.getWidth())  # 800
-    cameraHeight = int(robot.camera.getHeight())  # 480
-    ################################################################
-    
-    ################################################################
-    # Main loop:
-    ################################################################
-    while robot.step(timestep) != -1:      
-        key = robot.keyboard.getKey()
+    yawPID = PID(float(yawPIDParameter[0]), float(yawPIDParameter[1]), float(yawPIDParameter[2]), setpoint=float(yawTarget))
+    altiPID = PID(float(altitudePIDParameter[0]), float(altitudePIDParameter[1]), float(altitudePIDParameter[2]), setpoint=float(altitudeTarget))
+
+    yawPID.output_limits = (-0.5, 0.5)
+    altiPID.output_limits = (-1.5, 1.5)
+
+    def __init__(self):
+        Robot.__init__(self)
+        self.timeStep = int(self.getBasicTimeStep())
+
+        self.keyboard = self.getKeyboard()
+        self.keyboard.enable(10 * self.timeStep)
+
+        self.camera = self.getDevice("camera")
+        self.camera.enable(self.timeStep)
         
-        ################################################################
-        # Read all sensor
-        ################################################################       
-        roll, pitch, yaw = robot.imu.getRollPitchYaw()
-        #rollAccel, pitchAccel, yawAccel = robot.gyro.getValues()
-        xPos, yPos, altitudePos = robot.gps.getValues()
-        image = np.frombuffer(robot.camera.getImage(), dtype=np.uint8).reshape((robot.camera.getHeight(), robot.camera.getWidth(), 4))
-               
-        ################################################################
-        # Drone Motor Test
-        ################################################################    
-        if key == ord("1"):
-            robot.motorFrontLeft.setVelocity(maxSpeed * motorMultiplier)
-            robot.motorFrontRight.setVelocity(-maxSpeed * motorMultiplier)
-            robot.motorBackLeft.setVelocity(-maxSpeed * motorMultiplier)
-            robot.motorBackRight.setVelocity(maxSpeed * motorMultiplier)
-            print("Motor Test")
+        self.imu = self.getDevice("inertial unit")
+        self.imu.enable(self.timeStep)
         
-        elif key == ord('2'):
-            robot.gimbalRoll.setPosition(0.0) # min = -0.5, max = 0.5
-            robot.gimbaPitch.setPosition(1.6) # min = -0.5, max = 1.7
-            robot.gimbalYaw.setPosition(0.0) # min = -1.7, max = 1.7
-            print("Gimbal Test")
+        self.gps = self.getDevice("gps")
+        self.gps.enable(self.timeStep)
         
-        elif key == ord('3'):
-            statusTakeoff = True
-            print("Takeoff Run")
-       
-        elif key == ord('4'):
-            statusTakeoff = False
-            print("All Motor Stop")
-        
-        elif key == ord('5'):
-            statusAruco = True
-            print("Aruco Detection Run")
-        
-        elif key == ord('6'):
-            statusAruco = False
-            print("Aruco Detection Stop")
-    
-        if statusTakeoff == True:
-            xPosMarker = 0.00
-            yPosMarker = 0.00
+        self.gyro = self.getDevice("gyro")
+        self.gyro.enable(self.timeStep)
+
+        self.receiver = self.getDevice("receiver")
+        self.receiver.enable(self.timeStep)
+
+        self.motorFrontLeft = self.getDevice("front left propeller")
+        self.motorFrontRight = self.getDevice("front right propeller")
+        self.motorRearLeft = self.getDevice("rear left propeller")
+        self.motorRearRight = self.getDevice("rear right propeller")
+        motors = [self.motorFrontLeft, self.motorFrontRight, self.motorRearLeft, self.motorRearRight]
+        for motor in motors:
+            motor.setPosition(float("inf"))
+            motor.setVelocity(1)
+
+        self.gimbalRoll = self.getDevice("camera roll")
+        self.gimbalPitch = self.getDevice("camera pitch")
+        self.gimbalYaw = self.getDevice("camera yaw")
+
+    # for opencv 4.6.0 and below
+    def find_aruco(self, image):
+        self.image = image
+        self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+        self.aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
+        self.parameters = aruco.DetectorParameters_create()
+        self.markerCorner, self.id, self.reject = aruco.detectMarkers(self.gray, self.aruco_dict, parameters=self.parameters)
+        return self.markerCorner, self.id, self.reject
+
+    def run(self, show=False, log=False, save=False):
+        counter = 0
+
+        videoWriter = 0
+        if save is True:
+            fourcc = cv2.VideoWriter_fourcc("X", "V", "I", "D")
+            videoWriter = cv2.VideoWriter("./video.avi", fourcc, 20, (self.camera.getWidth(), self.camera.getHeight()))
+
+        while self.step(self.timeStep) != -1:
+            # Read sensors
+            roll, pitch, yaw = self.imu.getRollPitchYaw()
+            rollAccel, pitchAccel, yawAccel = self.gyro.getValues()
+            xPosition, yPosition, altitude = self.gps.getValues()
+            image = np.frombuffer(self.camera.getImage(), dtype=np.uint8).reshape((self.camera.getHeight(), self.camera.getWidth(), 4))
+
+            key = self.keyboard.getKey()
+
+            # Receive data from ground robot
+            while self.receiver.getQueueLength() > 0:
+                data = self.receiver.getString()
+                message = json.loads(data)
+                print(message)
+                self.receiver.nextPacket()
+
+            # Command
+            ## takeoff & landing
+            if key == ord("T"):
+                self.statusTakeoff = True
+                self.statusGimbal = True
+                self.altitudeTarget = 3.0
+                self.pitchAngleGimbal = 1.6
+                print("Takeoff")
+                sleep(0.15)
             
-            yawPID.setpoint = 0.00
-            altitudePID.setpoint = 3.10
-            yPID.setpoint = 0.00
-            xPID.setpoint = 0.00
+            ## landing
+            elif key == ord("L"):
+                self.statusLanding = True
+                self.altitudeTarget = 0.1
+                print("Landing")
+                sleep(0.15)
             
-            yPIDValue = 0.00 #yPID(yPos)
-            xPIDValue = 0.00 # xPID(xPos)
+            ## gimbal
+            elif key == ord("G"):
+                self.statusGimbal = not self.statusGimbal
+                if self.statusGimbal == True:
+                    self.rollAngleGimbal = 0.0
+                    self.pitchAngleGimbal = 1.6
+                    self.yawAngleGimbal = 0.0
+                print("Gimbal Stabilize", self.statusGimbal)
+                sleep(0.15)
+
+            # moving
+            elif key == ord("W"):
+                self.xTarget += 0.1
+                print("target x:{: .2f}[m]".format(self.xTarget))
+            elif key == ord("S"):
+                self.xTarget -= 0.1
+                print("target x:{: .2f}[m]".format(self.xTarget))
+            elif key == ord("A"):
+                self.yTarget += 0.1
+                print("target y:{: .2f}[m]".format(self.yTarget))
+            elif key == ord("D"):
+                self.yTarget -= 0.1
+                print("target y:{: .2f}[m]".format(self.yTarget))
+            elif key == (Keyboard.SHIFT + ord("W")):
+                self.altitudeTarget += 0.05
+                print("target altitude:{: .2f}[m]".format(self.altitudeTarget))
+            elif key == (Keyboard.SHIFT + ord("S")):
+                self.altitudeTarget -= 0.05
+                print("target altitude:{: .2f}[m]".format(self.altitudeTarget))
+            elif key == (Keyboard.SHIFT + ord("A")):
+                self.yawTarget += 0.05
+                print("target yaw:{: .2f}[rad]".format(self.yawTarget))
+            elif key == (Keyboard.SHIFT + ord("D")):
+                self.yawTarget -= 0.05
+                print("target yaw:{: .2f}[rad]".format(self.yawTarget))
+                
+            ## home
+            elif key == ord("H"):
+                self.statusHome = not self.statusHome
+                if self.statusHome == True:
+                    self.xTarget = 0.0
+                    self.yTarget = 0.0
+                    self.yawTarget = 0.0
+                    self.altitudeTarget = 10.0
+                print("Status Home:", self.statusHome)
+                sleep(0.15)
             
-            if statusAruco == True:
-                arucoCorner, arucoId, _ = find_aruco(image)
-                if arucoId is not None:
+            ## aruco
+            elif key == ord("M"):
+                self.statusAruco = not self.statusAruco
+                print("Status Aruco:", self.statusAruco)
+                sleep(0.15)
+            
+            ## rth
+            elif key == ord("R"):
+                self.statusHomeA = not self.statusHomeA
+                self.statusAruco = not self.statusAruco
+                if self.statusHomeA == True:
+                    self.yawTarget = 0.0
+                    self.altitudeTarget = 20.0
+                print("Return To Home:", self.statusHomeA)
+                sleep(0.15)
+
+            if self.statusHomeA == True:
+                altitudeError = altitude - self.altitudeTarget
+                if altitudeError < 0.25 and altitudeError > -0.25:
+                    self.xTarget = 0.0
+                    self.yTarget = 0.0
+
+            cameraHeight = int(self.camera.getHeight())
+            cameraWidth = int(self.camera.getWidth())
+
+            if self.statusAruco == True:
+                markerCorner, markerId, _ = self.find_aruco(image=image)
+                if markerId is not None:
                     image = cv2.line(image, (int(cameraWidth / 2), cameraHeight), (int(cameraWidth / 2), 0), (255, 255, 0), 1)
                     image = cv2.line(image, (0, int(cameraHeight / 2)), (cameraWidth, int(cameraHeight / 2)), (255, 255, 0), 1)
-                    arucoId = arucoId.flatten()
-                    
-                    for(markerCorner, markerId) in zip(arucoCorner, arucoId):
+
+                    for(markerCorner, markerId) in zip(markerCorner, markerId):
                         corners = markerCorner.reshape((4, 2))
                         (topLeft, topRight, bottomRight, bottomLeft) = corners
-                        
-                        topRight = (int(topRight[0]), int(topRight[1]))
-                        bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
-                        bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
-                        topLeft = (int(topLeft[0]), int(topLeft[1]))
 
-                        shapes = image.copy()
-                        cv2.rectangle(shapes, topLeft, bottomRight, (0, 255, 0), -1)
-                        alpha = 0.4
-                        image = cv2.addWeighted(shapes, alpha, image, 1 - alpha, 0)
+                    topRight = (int(topRight[0]), int(topRight[1]))
+                    bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+                    bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+                    topLeft = (int(topLeft[0]), int(topLeft[1]))
 
-                        cX = int((topLeft[0] + bottomRight[0]) / 2.0)
-                        cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                        cv2.circle(image, (cX, cY), 4, (0, 0, 255), -1)
-                        xPosMarker = cY / 100
-                        yPosMarker = cX / 100
-                        print("xPosMarker={:+.2f}|yPosMarker={:+.2f}".format(xPosMarker, yPosMarker))
+                    centerX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                    centerY = int((topLeft[1] + bottomRight[1]) / 2.0)
 
-                        yPIDValue = yPID(yPosMarker)
-                        #xPIDValue = xPID(xPosMarker)
-                        
-            
-            yawInput = yawPID(yaw)
-            verticalInput = altitudePID(altitudePos)
-            rollInput = rollPID(roll) - yPIDValue
-            pitchInput = pitchPID(pitch) + xPIDValue
-            
-            motorInputFrontLeft = verticalThrust + verticalInput - yawInput - pitchInput + rollInput
-            motorInputFrontRight = verticalThrust + verticalInput + yawInput - pitchInput - rollInput
-            motorInputBackLeft = verticalThrust + verticalInput + yawInput + pitchInput + rollInput
-            motorInputBackRight = verticalThrust + verticalInput - yawInput + pitchInput - rollInput
-            
-            #print("roll={:+.2f}|pitch={:+.2f}|yaw={:+.2f}|xPos={:+.2f}|yPos={:+.2f}|altitudePos={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}|xPosMarker={:+.2f}|yPosMarker={:+.2f}".format(roll, pitch, yaw, xPos, yPos, altitudePos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight, xPosMarker, yPosMarker))
-            
-        elif statusTakeoff == False:
-            motorInputFrontLeft = 0
-            motorInputFrontRight = 0
-            motorInputBackLeft = 0
-            motorInputBackRight = 0
+                    shapes = image.copy()
+                    cv2.rectangle(shapes, topLeft, bottomRight, (0, 255, 0), -1)
+                    alpha = 0.4
+                    image = cv2.addWeighted(shapes, alpha, image, 1 - alpha, 0)
                     
-        cv2.imshow("Camera", image)
-        cv2.waitKey(1)
-                
-        robot.motorFrontLeft.setVelocity(clamp(motorInputFrontLeft, -576, 576))
-        robot.motorFrontRight.setVelocity(clamp(-motorInputFrontRight, -576, 576))
-        robot.motorBackLeft.setVelocity(clamp(-motorInputBackLeft, -576, 576))
-        robot.motorBackRight.setVelocity(clamp(motorInputBackRight, -576, 576))
-        
-    cv2.destroyAllWindows()
-    
-      
-if __name__ == "__main__":
-    # create the Robot instance.
-    my_robot = Robot()
-    run_robot(my_robot)
+                    self.xTargetAruco = -4 * ((centerY - (cameraHeight / 2)) / cameraHeight)
+                    self.yTargetAruco = 4 * ((centerX - (cameraWidth / 2)) / cameraWidth)
+                    rollError = clamp(-self.yTargetAruco + 0.06, -1.0, 1.0)
+                    pitchError = clamp(self.xTargetAruco - 0.13, -1.0, 1.0)
+
+                    altitudeError = altitude - self.altitudeTarget
+                    if ((self.xTargetAruco < 0.1 and self.xTargetAruco > -0.1) and (self.yTargetAruco < 0.1 and self.yTargetAruco > -0.1) and (altitudeError < 0.5 and altitudeError > -0.5) and self.statusLanding == False):
+                        self.statusLanding = True
+                        self.altitudeTarget = 0.0
+                        print("Landing")
+                else:
+                    rollError = clamp(-yPosition + 0.06 + self.yTarget, -1.0, 1.0)
+                    pitchError = clamp(-xPosition - 0.13 + self.xTarget, -1.0, 1.0)
+            else:
+                rollError = clamp(-yPosition + 0.06 + self.yTarget, -1.0, 1.0)
+                pitchError = clamp(-xPosition - 0.13 + self.xTarget, -1.0, 1.0)
+
+            self.yawPID.setpoint = self.yawTarget
+            self.altiPID.setpoint = self.altitudeTarget
+
+            yawInput = self.yawPID(yaw)
+            verticalInput = self.altiPID(altitude)
+            
+            rollInput = (self.rollPIDParameter[0] * clamp(roll, -1.0, 1.0)) + (self.rollPIDParameter[2] * rollAccel) + rollError
+            pitchInput = (self.pitchPIDParameter[0] * clamp(pitch, -1.0, 1.0)) + (self.pitchPIDParameter[2] * pitchAccel) - pitchError
+            
+            motorFrontLeftInput = self.verticalThrust + verticalInput - yawInput + pitchInput - rollInput
+            motorFrontRightInput = self.verticalThrust + verticalInput + yawInput + pitchInput + rollInput
+            motorRearLeftInput = self.verticalThrust + verticalInput + yawInput - pitchInput - rollInput
+            motorRearRightInput = self.verticalThrust + verticalInput - yawInput - pitchInput + rollInput
+
+            if self.statusTakeoff == False or (self.statusLanding == True and altitude <= 0.1):
+                self.statusTakeoff = False
+                self.statusLanding = False
+                self.statusGimbal = False
+                self.statusHome = False
+                motorFrontLeftInput = 0.0
+                motorFrontRightInput = 0.0
+                motorRearLeftInput = 0.0
+                motorRearRightInput = 0.0
+
+            self.motorFrontLeft.setVelocity(motorFrontLeftInput)
+            self.motorFrontRight.setVelocity(-motorFrontRightInput)
+            self.motorRearLeft.setVelocity(-motorRearLeftInput)
+            self.motorRearRight.setVelocity(motorRearRightInput)
+
+            if self.statusGimbal == True:
+                rollGimbalInput = clamp((-0.001 * rollAccel + self.rollAngleGimbal), -0.5, 0.5)
+                pitchGimbalInput = clamp(((-0.001 * pitchAccel) + self.pitchAngleGimbal), -0.5, 1.7)
+                yawGimbalInput = clamp((-0.001 * yawAccel + self.yawAngleGimbal), -1.7, 1.7)
+                self.gimbalRoll.setPosition(rollGimbalInput)
+                self.gimbalPitch.setPosition(pitchGimbalInput)
+                self.gimbalYaw.setPosition(yawGimbalInput)
+
+            speed = self.gps.getSpeedVector()
+
+            logs = [
+                roll,
+                pitch,
+                yaw,
+                rollAccel,
+                pitchAccel,
+                yawAccel,
+                xPosition,
+                yPosition,
+                altitude,
+                rollError,
+                pitchError,
+                rollInput,
+                pitchInput,
+                yawInput,
+                verticalInput,
+                motorFrontLeftInput,
+                motorFrontRightInput,
+                motorRearLeftInput,
+                motorRearRightInput,
+                speed[0],
+                speed[1],
+                speed[2],
+                self.statusTakeoff,
+                self.statusHome,
+                self.statusAruco,
+                self.statusLanding,
+            ]
+
+            dlogs = []
+            for i in logs:
+                dlogs.append(float("{:.2f}".format(i)))
+
+            debug_mode = show
+            if debug_mode == True:
+                print(
+                    "r={:+.2f}|p={:+.2f}|y={:+.2f}|ra={:+.2f}|pa={:+.2f}|ya={:+.2f}|x={:+.2f}|y={:+.2f}|z={:+.2f}|re={:+.2f}|pe={:+.2f}|ri={:+.2f}|pi={:+.2f}|yi={:+.2f}|vi={:+.2f}|fl={:+.2f}|fr={:+.2f}|rl={:+.2f}|rr={:+.2f}|sx={:+.2f}|sy={:+.2f}|sz={:+.2f}|st={}|sh={}|sa={}|sl={}".format(
+                        dlogs[0],
+                        dlogs[1],
+                        dlogs[2],
+                        dlogs[3],
+                        dlogs[4],
+                        dlogs[5],
+                        dlogs[6],
+                        dlogs[7],
+                        dlogs[8],
+                        dlogs[9],
+                        dlogs[10],
+                        dlogs[11],
+                        dlogs[12],
+                        dlogs[13],
+                        dlogs[14],
+                        dlogs[15],
+                        dlogs[16],
+                        dlogs[17],
+                        dlogs[18],
+                        dlogs[19],
+                        dlogs[20],
+                        dlogs[21],
+                        int(dlogs[22]),
+                        int(dlogs[23]),
+                        int(dlogs[24]),
+                        int(dlogs[25]),
+                    )
+                )
+
+            cv2.imshow("Camera", image)
+            if save is True:
+                videoWriter.write(image)
+            cv2.waitKey(1)
+
+            log_mode = log
+            if log_mode == True:
+                dlogs.insert(0, counter)
+                csvlogger.critical(dlogs)
+
+            counter += 1
+        if save is True:
+            videoWriter.release()
+        cv2.destroyAllWindows()
+
+
+robot = Mavic()
+robot.run(show=False, log=False, save=False)
