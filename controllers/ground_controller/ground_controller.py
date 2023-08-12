@@ -25,7 +25,7 @@ def run_robot(robot):
     wheelRearRight.setVelocity(0.0)
       
     # GPS
-    gps = robot.getDevice("gps")
+    gps = robot.getDevice("gps_ground")
     gps.enable(timestep)
       
     # Distance Sensor

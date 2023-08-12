@@ -14,9 +14,8 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.14620295027651187 0.7904538756009932 0.5948170877486734 0.6029709521832103
-  position -14.262449080142677 -6.335232748994109 10.260836783750902
-  follow "Mavic 2 PRO"
+  orientation -0.09754346810012535 0.47416263008225157 0.8750171838681123 0.461844137788823
+  position -8.754287391449012 -4.133803984151759 3.5252270184221883
   followType "None"
 }
 TexturedBackground {
@@ -48,6 +47,7 @@ Robot {
           ]
         }
       ]
+      name "gps_ground"
     }
     DEF BODY Shape {
       appearance PBRAppearance {
@@ -209,15 +209,6 @@ Robot {
   controller "ground_controller"
 }
 Mavic2Pro {
-  translation -0.0036604558154140618 -0.00388180705142184 0.13061341999800044
+  translation 0 0 0.135
   controller "mavic_controller"
-  customData "0"
-  supervisor TRUE
-  cameraSlot [
-    Camera {
-      width 400
-      height 240
-      near 0.2
-    }
-  ]
 }
