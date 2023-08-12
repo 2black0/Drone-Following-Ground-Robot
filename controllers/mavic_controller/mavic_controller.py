@@ -3,7 +3,6 @@ from simple_pid import PID
 import numpy as np
 import cv2
 from cv2 import aruco
-import math
 
 def clamp(value, value_min, value_max):
     return min(max(value, value_min), value_max)
@@ -18,8 +17,8 @@ def run_robot(robot):
     xParameter = [0.3, 0.12, 0.25]
     yParameter = [0.3, 0.1, 0.21]
     altitudeParameter = [0.5, 0.01, 0.15]
-    rollParameter = [2.1, 1.1, 1.1]#[3.5, 1.7, 4.2]
-    pitchParameter = [2.5, 1.5, 1.2]#[3.9, 1.9, 4.0]
+    rollParameter = [2.1, 1.1, 1.1]
+    pitchParameter = [2.5, 1.5, 1.2]
     yawParameter = [0.55, 0.0008, 3]
 
     counter = 0
