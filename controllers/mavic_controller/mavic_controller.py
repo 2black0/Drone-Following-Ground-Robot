@@ -152,6 +152,7 @@ class Mavic(Robot):
             while self.receiver.getQueueLength() > 0:
                 data = self.receiver.getString()
                 message = json.loads(data)
+                yawGround = float(message["yaw"])
                 xGroundPosition = float(message["xPosition"] / 100)
                 yGroundPosition = float(message["yPosition"] / 100)
                 #print("xGroundPosition:{:+.2f}|yGroundPosition:{:+.2f}".format(xGroundPosition, yGroundPosition))
@@ -162,7 +163,7 @@ class Mavic(Robot):
             if key == ord("T"):
                 self.statusTakeoff = True
                 self.statusGimbal = True
-                self.altitudeTarget = 3.0
+                self.altitudeTarget = 5.0
                 self.pitchAngleGimbal = 1.6
                 print("Takeoff")
                 sleep(0.15)
@@ -289,23 +290,25 @@ class Mavic(Robot):
                     print("Aruco:True|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
                     
                 else:
+                    self.yawPID.setpoint = yawGround
                     self.yTarget = yGroundPosition
                     self.xTarget = xGroundPosition
                     rollError = clamp(-yPosition + self.yTarget, -1.0, 1.0)
                     pitchError = clamp(-xPosition + self.xTarget, -1.0, 1.0)
                     print("Aruco:False|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
             elif self.statusFollow == True:
+                self.yawPID.setpoint = yawGround
                 self.yTarget = yGroundPosition
                 self.xTarget = xGroundPosition
                 rollError = clamp(-yPosition + self.yTarget, -1.0, 1.0)
                 pitchError = clamp(-xPosition + self.xTarget, -1.0, 1.0)
                 print("xPos:{:+.2f}|yPos:{:+.2f}|xG:{:+.2f}|yG:{:+.2f}".format(xPosition, yPosition, xGroundPosition, yGroundPosition))
             else:
+                self.yawPID.setpoint = self.yawTarget
                 rollError = clamp(-yPosition + 0.06 + self.yTarget, -1.0, 1.0)
                 pitchError = clamp(-xPosition - 0.13 + self.xTarget, -1.0, 1.0)
                 print("Aruco:Off|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
 
-            self.yawPID.setpoint = self.yawTarget
             self.altiPID.setpoint = self.altitudeTarget
 
             yawInput = self.yawPID(yaw)

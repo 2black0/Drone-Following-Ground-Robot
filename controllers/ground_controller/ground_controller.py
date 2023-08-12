@@ -3,7 +3,8 @@ import json
 
 def run_robot(robot):
     timestep = int(robot.getBasicTimeStep())
-    max_speed = 6.28
+    maxSpeed = 6.28
+    multiplier = 1.0
     
     # Keyboard
     robot.keyboard = robot.getKeyboard()
@@ -28,6 +29,10 @@ def run_robot(robot):
     # GPS
     gps = robot.getDevice("gps_ground")
     gps.enable(timestep)
+    
+    # Accelerometer
+    imu = robot.getDevice("inertial unit ground")
+    imu.enable(timestep)
       
     # Distance Sensor
     dsLeft = robot.getDevice("ds_left")
@@ -41,22 +46,23 @@ def run_robot(robot):
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
+        roll, pitch, yaw = imu.getRollPitchYaw()
         xPosition, yPosition, altitude = gps.getValues()
         print("xPosition={:+.2f}|yPosition={:+.2f}".format(xPosition, yPosition))        
 
         xPositionSend = int(xPosition * 100)
         yPositionSend = int(yPosition * 100)
         
-        message = {'xPosition': xPositionSend, 'yPosition': yPositionSend}
+        message = {'yaw': yaw, 'xPosition': xPositionSend, 'yPosition': yPositionSend}
         emitter.send(json.dumps(message))
         
         key = robot.keyboard.getKey()
         
         if key == ord("1"):            
-            wheelFrontLeft.setVelocity(max_speed * 0.5)
-            wheelFrontRight.setVelocity(max_speed * 0.5)
-            wheelRearLeft.setVelocity(max_speed * 0.5)
-            wheelRearRight.setVelocity(max_speed * 0.5)
+            wheelFrontLeft.setVelocity(maxSpeed * multiplier)
+            wheelFrontRight.setVelocity(maxSpeed * multiplier)
+            wheelRearLeft.setVelocity(maxSpeed * multiplier)
+            wheelRearRight.setVelocity(maxSpeed * multiplier)
         elif key == ord("2"):
             wheelFrontLeft.setVelocity(0.0)
             wheelFrontRight.setVelocity(0.0)
