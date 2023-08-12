@@ -166,6 +166,17 @@ def run_robot(robot):
             print("Aruco Detection Stop")
     
         if statusTakeoff == True:
+            xPosMarker = 0.00
+            yPosMarker = 0.00
+            
+            yawPID.setpoint = 0.00
+            altitudePID.setpoint = 3.10
+            yPID.setpoint = 0.00
+            xPID.setpoint = 0.00
+            
+            yPIDValue = 0.00 #yPID(yPos)
+            xPIDValue = 0.00 # xPID(xPos)
+            
             if statusAruco == True:
                 arucoCorner, arucoId, _ = find_aruco(image)
                 if arucoId is not None:
@@ -190,25 +201,25 @@ def run_robot(robot):
                         cX = int((topLeft[0] + bottomRight[0]) / 2.0)
                         cY = int((topLeft[1] + bottomRight[1]) / 2.0)
                         cv2.circle(image, (cX, cY), 4, (0, 0, 255), -1)
+                        xPosMarker = cY / 100
+                        yPosMarker = cX / 100
+                        print("xPosMarker={:+.2f}|yPosMarker={:+.2f}".format(xPosMarker, yPosMarker))
+
+                        yPIDValue = yPID(yPosMarker)
+                        #xPIDValue = xPID(xPosMarker)
+                        
             
-            yawPID.setpoint = 0.00
             yawInput = yawPID(yaw)
-            
-            altitudePID.setpoint = 2.00
             verticalInput = altitudePID(altitudePos)
-            
-            yPID.setpoint = 0.00
-            xPID.setpoint = 0.00
-            
-            rollInput = rollPID(roll) - yPID(yPos)
-            pitchInput = pitchPID(pitch) + xPID(xPos)
+            rollInput = rollPID(roll) - yPIDValue
+            pitchInput = pitchPID(pitch) + xPIDValue
             
             motorInputFrontLeft = verticalThrust + verticalInput - yawInput - pitchInput + rollInput
             motorInputFrontRight = verticalThrust + verticalInput + yawInput - pitchInput - rollInput
             motorInputBackLeft = verticalThrust + verticalInput + yawInput + pitchInput + rollInput
             motorInputBackRight = verticalThrust + verticalInput - yawInput + pitchInput - rollInput
             
-            print("roll={:+.2f}|pitch={:+.2f}|yaw={:+.2f}|xPos={:+.2f}|yPos={:+.2f}|altitudePos={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(roll, pitch, yaw, xPos, yPos, altitudePos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))
+            #print("roll={:+.2f}|pitch={:+.2f}|yaw={:+.2f}|xPos={:+.2f}|yPos={:+.2f}|altitudePos={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}|xPosMarker={:+.2f}|yPosMarker={:+.2f}".format(roll, pitch, yaw, xPos, yPos, altitudePos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight, xPosMarker, yPosMarker))
             
         elif statusTakeoff == False:
             motorInputFrontLeft = 0

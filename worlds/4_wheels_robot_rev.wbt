@@ -1,4 +1,4 @@
-#VRML_SIM R2023b utf8
+#VRML_SIM R2023a utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
@@ -14,8 +14,8 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.22800680889002 0.09183714719809945 0.9693187471076293 2.3971559146743573
-  position 1.8616435938713776 -1.558138425622659 1.4186047465234202
+  orientation -0.4217194052043162 0.21046559358777583 0.8819620043912678 2.3123229183094303
+  position 2.0007409082883116 -2.3207147603795106 3.9061336455032873
   follow "Mavic 2 PRO"
   followType "None"
 }
@@ -213,7 +213,7 @@ Robot {
 Mavic2Pro {
   translation 0 0 0.182536
   rotation 0 0 1 1.57888
-  controller "mavic2_controller"
+  controller "mavic_controller"
   customData "0"
   bodySlot [
     GPS {

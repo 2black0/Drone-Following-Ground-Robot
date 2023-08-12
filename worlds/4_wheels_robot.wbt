@@ -14,8 +14,8 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.09754346810012535 0.47416263008225157 0.8750171838681123 0.461844137788823
-  position -8.754287391449012 -4.133803984151759 3.5252270184221883
+  orientation -0.20811381519952538 0.8973281858449378 0.38921814810120375 1.0747781128641571
+  position -11.879399344953814 -6.692337270083214 25.44095409866452
   followType "None"
 }
 TexturedBackground {
@@ -156,7 +156,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 -0.26 0
-        rotation 1 -5.84482457023939e-09 5.844847256340065e-09 1.5707999999999889
+        rotation 1 -5.844824570239391e-09 5.844847256340066e-09 1.5707999999999886
         children [
           USE WHEEL
         ]
@@ -211,4 +211,12 @@ Robot {
 Mavic2Pro {
   translation 0 0 0.135
   controller "mavic_controller"
+  cameraSlot [
+    Camera {
+      width 800
+      height 420
+      exposure 5
+      antiAliasing TRUE
+    }
+  ]
 }
