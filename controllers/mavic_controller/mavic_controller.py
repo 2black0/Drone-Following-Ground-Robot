@@ -76,14 +76,16 @@ class Mavic(Robot):
     statusAruco = False
 
     statusHomeA = False
-    statusHomeB = False
-    statusHomeC = False
+    statusFollow= False
 
     yawPID = PID(float(yawPIDParameter[0]), float(yawPIDParameter[1]), float(yawPIDParameter[2]), setpoint=float(yawTarget))
     altiPID = PID(float(altitudePIDParameter[0]), float(altitudePIDParameter[1]), float(altitudePIDParameter[2]), setpoint=float(altitudeTarget))
 
     yawPID.output_limits = (-0.5, 0.5)
     altiPID.output_limits = (-1.5, 1.5)
+
+    xGroundPosition = 0.00
+    yGroundPosition = 0.00
 
     def __init__(self):
         Robot.__init__(self)
@@ -150,7 +152,9 @@ class Mavic(Robot):
             while self.receiver.getQueueLength() > 0:
                 data = self.receiver.getString()
                 message = json.loads(data)
-                print(message)
+                xGroundPosition = float(message["xPosition"] / 100)
+                yGroundPosition = float(message["yPosition"] / 100)
+                #print("xGroundPosition:{:+.2f}|yGroundPosition:{:+.2f}".format(xGroundPosition, yGroundPosition))
                 self.receiver.nextPacket()
 
             # Command
@@ -218,9 +222,15 @@ class Mavic(Robot):
                 sleep(0.15)
             
             ## aruco
-            elif key == ord("M"):
+            elif key == ord("F"):
                 self.statusAruco = not self.statusAruco
                 print("Status Aruco:", self.statusAruco)
+                sleep(0.15)
+            
+            ## follow gps ground
+            elif key == ord("P"):
+                self.statusFollow = not self.statusFollow
+                print("Status Follow:", self.statusFollow)
                 sleep(0.15)
             
             ## rth
@@ -275,12 +285,25 @@ class Mavic(Robot):
                     #    self.statusLanding = True
                     #    self.altitudeTarget = 0.0
                     #    print("Landing")
+                    
+                    print("Aruco:True|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
+                    
                 else:
-                    rollError = clamp(-yPosition + 0.06 + self.yTarget, -1.0, 1.0)
-                    pitchError = clamp(-xPosition - 0.13 + self.xTarget, -1.0, 1.0)
+                    self.yTarget = yGroundPosition
+                    self.xTarget = xGroundPosition
+                    rollError = clamp(-yPosition + self.yTarget, -1.0, 1.0)
+                    pitchError = clamp(-xPosition + self.xTarget, -1.0, 1.0)
+                    print("Aruco:False|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
+            elif self.statusFollow == True:
+                self.yTarget = yGroundPosition
+                self.xTarget = xGroundPosition
+                rollError = clamp(-yPosition + self.yTarget, -1.0, 1.0)
+                pitchError = clamp(-xPosition + self.xTarget, -1.0, 1.0)
+                print("xPos:{:+.2f}|yPos:{:+.2f}|xG:{:+.2f}|yG:{:+.2f}".format(xPosition, yPosition, xGroundPosition, yGroundPosition))
             else:
                 rollError = clamp(-yPosition + 0.06 + self.yTarget, -1.0, 1.0)
                 pitchError = clamp(-xPosition - 0.13 + self.xTarget, -1.0, 1.0)
+                print("Aruco:Off|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
 
             self.yawPID.setpoint = self.yawTarget
             self.altiPID.setpoint = self.altitudeTarget
