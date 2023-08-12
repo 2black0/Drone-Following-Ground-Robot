@@ -271,10 +271,10 @@ class Mavic(Robot):
                     pitchError = clamp(self.xTargetAruco - 0.13, -1.0, 1.0)
 
                     altitudeError = altitude - self.altitudeTarget
-                    if ((self.xTargetAruco < 0.1 and self.xTargetAruco > -0.1) and (self.yTargetAruco < 0.1 and self.yTargetAruco > -0.1) and (altitudeError < 0.5 and altitudeError > -0.5) and self.statusLanding == False):
-                        self.statusLanding = True
-                        self.altitudeTarget = 0.0
-                        print("Landing")
+                    #if ((self.xTargetAruco < 0.1 and self.xTargetAruco > -0.1) and (self.yTargetAruco < 0.1 and self.yTargetAruco > -0.1) and (altitudeError < 0.5 and altitudeError > -0.5) and self.statusLanding == False):
+                    #    self.statusLanding = True
+                    #    self.altitudeTarget = 0.0
+                    #    print("Landing")
                 else:
                     rollError = clamp(-yPosition + 0.06 + self.yTarget, -1.0, 1.0)
                     pitchError = clamp(-xPosition - 0.13 + self.xTarget, -1.0, 1.0)
