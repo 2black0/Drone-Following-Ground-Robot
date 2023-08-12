@@ -7,6 +7,13 @@ from cv2 import aruco
 def clamp(value, value_min, value_max):
     return min(max(value, value_min), value_max)
 
+def find_aruco(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    arucoDict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+    arucoParameters = aruco.DetectorParameters_create()
+    arucoCorner, arucoId, arucoReject = aruco.detectMarkers(gray, arucoDict, parameters=arucoParameters)
+    return arucoCorner, arucoId, arucoReject
+
 def run_robot(robot):
     ################################################################
     ## initialize all
@@ -102,6 +109,8 @@ def run_robot(robot):
     # Camera
     robot.camera = robot.getDevice("camera")
     robot.camera.enable(timestep)
+    cameraHeight = int(robot.camera.getHeight())  # 240
+    cameraWidth = int(robot.camera.getWidth())  # 400
     ################################################################
     
     ################################################################
@@ -120,9 +129,6 @@ def run_robot(robot):
         rollAccel, pitchAccel, yawAccel = robot.gyro.getValues()
         xPos, yPos, altitudePos = robot.gps.getValues()
         image = np.frombuffer(robot.camera.getImage(), dtype=np.uint8).reshape((robot.camera.getHeight(), robot.camera.getWidth(), 4))
-        
-        cv2.imshow("Camera", image)
-        cv2.waitKey(1)
         
         ################################################################
         # Drone Motor Test
@@ -143,7 +149,13 @@ def run_robot(robot):
             print("Takeoff Run")
         elif key == ord('4'):
             statusTakeoff = False
-            print("Takeoff Run")
+            print("All Motor Stop")
+        elif key == ord('5'):
+            statusAruco = True
+            print("Aruco Detection Run")
+        elif key == ord('6'):
+            statusAruco = False
+            print("Aruco Detection Stop")
     
         if statusTakeoff == True:
             yawPID.setpoint = yawTarget
@@ -160,7 +172,7 @@ def run_robot(robot):
             motorInputBackLeft = verticalThrust + verticalInput + yawInput + pitchInput + rollInput
             motorInputBackRight = verticalThrust + verticalInput - yawInput + pitchInput - rollInput
             
-            print("roll={:+.2f}|pitch={:+.2f}|yaw={:+.2f}|RollA={:+.2f}|pitchA={:+.2f}|yawA={:+.2f}|xPos={:+.2f}|yPos={:+.2f}|altitudePos={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(roll, pitch, yaw, rollAccel, pitchAccel, yawAccel, xPos, yPos, altitudePos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))
+            #print("roll={:+.2f}|pitch={:+.2f}|yaw={:+.2f}|RollA={:+.2f}|pitchA={:+.2f}|yawA={:+.2f}|xPos={:+.2f}|yPos={:+.2f}|altitudePos={:+.2f}|MFL={:+.2f}|MFR={:+.2f}|MBL={:+.2f}|MBR={:+.2f}".format(roll, pitch, yaw, rollAccel, pitchAccel, yawAccel, xPos, yPos, altitudePos, motorInputFrontLeft, motorInputFrontRight, motorInputBackLeft, motorInputBackRight))
             
         elif statusTakeoff == False:
             motorInputFrontLeft = 0
@@ -168,6 +180,50 @@ def run_robot(robot):
             motorInputBackLeft = 0
             motorInputBackRight = 0
         
+        if statusAruco == True:
+            arucoCorner, arucoId, _ = find_aruco(image)
+            #print(arucoId)
+            if arucoId is not None:
+                #print(arucoCorner)
+                image = cv2.line(image, (int(cameraWidth / 2), cameraHeight), (int(cameraWidth / 2), 0), (255, 255, 0), 1)
+                image = cv2.line(image, (0, int(cameraHeight / 2)), (cameraWidth, int(cameraHeight / 2)), (255, 255, 0), 1)
+                #arucoXCenter = arucoCorner[0][0][1][0] + ((arucoCorner[0][0][0][0] - arucoCorner[0][0][1][0]) / 2)
+                #arucoYCenter = arucoCorner[0][0][2][1] + ((arucoCorner[0][0][0][1] - arucoCorner[0][0][2][1]) / 2)
+                # image = cv2.circle(image, (int(center_x), int(center_y)), 2, (0, 0, 255), 3)
+                
+                arucoId = arucoId.flatten()
+                
+                for(markerCorner, markerId) in zip(arucoCorner, arucoId):
+                    corners = markerCorner.reshape((4, 2))
+                    (topLeft, topRight, bottomRight, bottomLeft) = corners
+                    
+                    topRight = (int(topRight[0]), int(topRight[1]))
+                    bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+                    bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+                    topLeft = (int(topLeft[0]), int(topLeft[1]))
+
+                    #startPoint = (int(arucoCorner[0][0][1][0]), int(arucoCorner[0][0][0][1]))
+                    #endPoint = (int(arucoCorner[0][0][0][0]), int(arucoCorner[0][0][2][1]))
+                    shapes = image.copy()
+                    cv2.rectangle(shapes, topLeft, bottomRight, (0, 255, 0), -1)
+                    alpha = 0.4
+                    image = cv2.addWeighted(shapes, alpha, image, 1 - alpha, 0)
+
+                    #cv2.line(image, topLeft, topRight, (0, 255, 0), 2)
+                    #cv2.line(image, topRight, bottomRight, (0, 255, 0), 2)
+                    #cv2.line(image, bottomRight, bottomLeft, (0, 255, 0), 2)
+                    #cv2.line(image, bottomLeft, topLeft, (0, 255, 0), 2)
+
+                    #cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                    #cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                    #cv2.circle(image, (cX, cY), 4, (0, 0, 255), -1)
+                    
+                    #cv2.putText(image, str(markerId), (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    #print("[INFO] ArUco marker ID: {}".format(markerId))
+                    
+        cv2.imshow("Camera", image)
+        cv2.waitKey(1)
+                
         robot.motorFrontLeft.setVelocity(clamp(motorInputFrontLeft, -576, 576))
         robot.motorFrontRight.setVelocity(clamp(-motorInputFrontRight, -576, 576))
         robot.motorBackLeft.setVelocity(clamp(-motorInputBackLeft, -576, 576))

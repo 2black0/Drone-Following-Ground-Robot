@@ -15,7 +15,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.14620295027651187 0.7904538756009932 0.5948170877486734 0.6029709521832103
-  position -13.63382154042783 -5.95262036257594 9.693679414961107
+  position -14.262449080142677 -6.335232748994109 10.260836783750902
   follow "Mavic 2 PRO"
   followType "None"
 }
@@ -54,7 +54,7 @@ Robot {
         baseColor 0.917647 0.917647 0.917647
         baseColorMap ImageTexture {
           url [
-            "textures/4x4_1000-0 (Custom).png"
+            "textures/6x6_1000-0.png"
           ]
         }
         roughness 1
