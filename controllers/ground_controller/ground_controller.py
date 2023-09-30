@@ -53,7 +53,7 @@ def run_robot(robot):
         xPositionSend = int(xPosition * 100)
         yPositionSend = int(yPosition * 100)
         
-        message = {'yaw': yaw, 'xPosition': xPositionSend, 'yPosition': yPositionSend}
+        message = {'yaw': yaw, '1xPosition': xPositionSend, 'yPosition': yPositionSend}
         emitter.send(json.dumps(message))
         
         key = robot.keyboard.getKey()
