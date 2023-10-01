@@ -430,4 +430,4 @@ class Mavic(Robot):
 
 
 robot = Mavic()
-robot.run(show=False, log=False, save=False)
+robot.run(show=True, log=True, save=True)
