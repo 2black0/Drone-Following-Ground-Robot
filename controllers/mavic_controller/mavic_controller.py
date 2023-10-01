@@ -8,7 +8,7 @@ from cv2 import aruco
 from csv_logger import CsvLogger
 import json
 
-filename = "logger.csv"
+filename = "logger_drone.csv"
 header = [
     "time",
     "counter",

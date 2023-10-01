@@ -2,7 +2,19 @@ from controller import Robot, Keyboard, Emitter
 import json
 from csv_logger import CsvLogger
 
+filename = "logger_mobile.csv"
+header = [
+    "time",
+    "counter",
+    "xPosition",
+    "yPosition",
+]
+csvlogger = CsvLogger(filename=filename, header=header)
+
 def run_robot(robot):
+    counter = 0
+    log = True
+    
     timestep = int(robot.getBasicTimeStep())
     maxSpeed = 6.28
     multiplier = 1.0
@@ -68,7 +80,24 @@ def run_robot(robot):
             wheelFrontLeft.setVelocity(0.0)
             wheelFrontRight.setVelocity(0.0)
             wheelRearLeft.setVelocity(0.0)
-            wheelRearRight.setVelocity(0.0)    
+            wheelRearRight.setVelocity(0.0)
+        
+        
+        logs = [
+                xPosition,
+                yPosition,
+            ]
+        
+        dlogs = []
+        for i in logs:
+            dlogs.append(float("{:.2f}".format(i)))
+        
+        log_mode = log
+        if log_mode == True:
+            dlogs.insert(0, counter)
+            csvlogger.critical(dlogs)
+
+            counter += 1
 
 if __name__ == "__main__":
     # create the Robot instance.
