@@ -8,6 +8,7 @@ header = [
     "counter",
     "xPosition",
     "yPosition",
+    "altitude",
 ]
 csvlogger = CsvLogger(filename=filename, header=header)
 
@@ -18,6 +19,7 @@ def run_robot(robot):
     timestep = int(robot.getBasicTimeStep())
     maxSpeed = 6.28
     multiplier = 1.0
+    multiplier_turn = 0.25
     
     # Keyboard
     robot.keyboard = robot.getKeyboard()
@@ -61,12 +63,13 @@ def run_robot(robot):
     while robot.step(timestep) != -1:
         roll, pitch, yaw = imu.getRollPitchYaw()
         xPosition, yPosition, altitude = gps.getValues()
-        print("xPosition={:+.2f}|yPosition={:+.2f}".format(xPosition, yPosition))        
+        #print("xPosition={:+.2f}|yPosition={:+.2f}|altitude={:+.2f}".format(xPosition, yPosition, altitude))        
 
         xPositionSend = int(xPosition * 100)
         yPositionSend = int(yPosition * 100)
+        altitudeSend = int(altitude  * 100)
         
-        message = {'yaw': yaw, 'xPosition': xPositionSend, 'yPosition': yPositionSend}
+        message = {'yaw': yaw, 'xPosition': xPositionSend, 'yPosition': yPositionSend, 'altitude': altitudeSend}
         emitter.send(json.dumps(message))
         
         key = robot.keyboard.getKey()
@@ -76,7 +79,17 @@ def run_robot(robot):
             wheelFrontRight.setVelocity(maxSpeed * multiplier)
             wheelRearLeft.setVelocity(maxSpeed * multiplier)
             wheelRearRight.setVelocity(maxSpeed * multiplier)
-        elif key == ord("2"):
+        if key == ord("2"):            
+            wheelFrontLeft.setVelocity(maxSpeed * multiplier_turn)
+            wheelFrontRight.setVelocity(maxSpeed * multiplier)
+            wheelRearLeft.setVelocity(maxSpeed * multiplier_turn)
+            wheelRearRight.setVelocity(maxSpeed * multiplier)
+        if key == ord("3"):            
+            wheelFrontLeft.setVelocity(maxSpeed * multiplier)
+            wheelFrontRight.setVelocity(maxSpeed * multiplier_turn)
+            wheelRearLeft.setVelocity(maxSpeed * multiplier)
+            wheelRearRight.setVelocity(maxSpeed * multiplier_turn)
+        elif key == ord("4"):
             wheelFrontLeft.setVelocity(0.0)
             wheelFrontRight.setVelocity(0.0)
             wheelRearLeft.setVelocity(0.0)
@@ -86,6 +99,7 @@ def run_robot(robot):
         logs = [
                 xPosition,
                 yPosition,
+                altitude,
             ]
         
         dlogs = []

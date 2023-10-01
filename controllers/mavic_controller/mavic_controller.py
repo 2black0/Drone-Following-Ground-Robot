@@ -156,7 +156,8 @@ class Mavic(Robot):
                 yawGround = float(message["yaw"])
                 xGroundPosition = float(message["xPosition"] / 100)
                 yGroundPosition = float(message["yPosition"] / 100)
-                #print("xGroundPosition:{:+.2f}|yGroundPosition:{:+.2f}".format(xGroundPosition, yGroundPosition))
+                altitudeGroundPosition = float(message["altitude"] / 100)
+                #print("xGroundPosition:{:+.2f}|yGroundPosition:{:+.2f}|altitudeGroundPosition:{:+.2f}".format(xGroundPosition, yGroundPosition, altitudeGroundPosition))
                 self.receiver.nextPacket()
 
             # Command
@@ -282,35 +283,45 @@ class Mavic(Robot):
                     rollError = clamp(-self.yTargetAruco + 0.06, -1.0, 1.0)
                     pitchError = clamp(self.xTargetAruco - 0.13, -1.0, 1.0)
 
-                    altitudeError = altitude - self.altitudeTarget
+                    #squareSize = (int(topRight[0]) - int(bottomLeft[0])) * (int(topRight[1]) - int(bottomLeft[1]))
+                    #print(squareSize) #set point altitude average = 3785 untuk ketinggian 500 cm = 5 m
+                    #estimateAltitude = (squareSize / 3785) * 5
+                     
+                    #altitudeError = altitude - self.altitudeTarget
+                    #altitudeError = estimateAltitude - self.altitudeTarget
+                    self.altiPID.setpoint = self.altitudeTarget + altitudeGroundPosition + 3.07
+                    #print(altitudeError)
                     #if ((self.xTargetAruco < 0.1 and self.xTargetAruco > -0.1) and (self.yTargetAruco < 0.1 and self.yTargetAruco > -0.1) and (altitudeError < 0.5 and altitudeError > -0.5) and self.statusLanding == False):
                     #    self.statusLanding = True
                     #    self.altitudeTarget = 0.0
                     #    print("Landing")
                     
-                    print("Aruco:True|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
+                    #print("Aruco:True|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
                     
                 else:
                     self.yawPID.setpoint = yawGround
+                    self.altiPID.setpoint = self.altitudeTarget + altitudeGroundPosition + 3.07
                     self.yTarget = yGroundPosition
                     self.xTarget = xGroundPosition
                     rollError = clamp(-yPosition + self.yTarget, -1.0, 1.0)
                     pitchError = clamp(-xPosition + self.xTarget, -1.0, 1.0)
-                    print("Aruco:False|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
+                    #print("Aruco:False|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
             elif self.statusFollow == True:
                 self.yawPID.setpoint = yawGround
+                self.altiPID.setpoint = self.altitudeTarget + altitudeGroundPosition + 3.07
                 self.yTarget = yGroundPosition
                 self.xTarget = xGroundPosition
                 rollError = clamp(-yPosition + self.yTarget, -1.0, 1.0)
                 pitchError = clamp(-xPosition + self.xTarget, -1.0, 1.0)
-                print("xPos:{:+.2f}|yPos:{:+.2f}|xG:{:+.2f}|yG:{:+.2f}".format(xPosition, yPosition, xGroundPosition, yGroundPosition))
+                #print("xPos:{:+.2f}|yPos:{:+.2f}|xG:{:+.2f}|yG:{:+.2f}".format(xPosition, yPosition, xGroundPosition, yGroundPosition))
             else:
                 self.yawPID.setpoint = self.yawTarget
+                self.altiPID.setpoint = self.altitudeTarget
                 rollError = clamp(-yPosition + 0.06 + self.yTarget, -1.0, 1.0)
                 pitchError = clamp(-xPosition - 0.13 + self.xTarget, -1.0, 1.0)
-                print("Aruco:Off|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
+                #print("Aruco:Off|rollError:{:+.2f}|pitchError:{:+.2f}".format(rollError, pitchError))
 
-            self.altiPID.setpoint = self.altitudeTarget
+            #self.altiPID.setpoint = self.altitudeTarget
 
             yawInput = self.yawPID(yaw)
             verticalInput = self.altiPID(altitude)
@@ -432,4 +443,4 @@ class Mavic(Robot):
 
 
 robot = Mavic()
-robot.run(show=False, log=True, save=True)
+robot.run(show=False, log=True, save=False)
