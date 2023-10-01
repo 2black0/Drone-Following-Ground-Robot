@@ -5,6 +5,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/GlossyPaint.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/MattePaint.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/UnevenTerrain.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/apartment_structure/protos/Wall.proto"
 
 WorldInfo {
   basicTimeStep 16
@@ -14,8 +15,8 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.2172321147922934 0.4521334063817304 0.8650928222662125 1.0139504776668273
-  position -22.741907362404447 -29.43511824492012 21.066846769065165
+  orientation -0.21241714255107813 0.318701095486171 0.9237470266725353 1.2500700874542623
+  position -11.15985715608925 -38.10367535134466 20.13635221204876
   followType "None"
 }
 TexturedBackground {
@@ -24,9 +25,11 @@ TexturedBackgroundLight {
 }
 UnevenTerrain {
   translation 0 0 -3.13
+  randomSeed 8
+  flatCenter TRUE
 }
 Robot {
-  translation 0 0 0.0399049
+  translation 0 0 -3.07899
   children [
     InertialUnit {
       name "inertial unit ground"
@@ -84,7 +87,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 0.26 0
-        rotation 1 4.871024270889945e-09 -4.87104771888429e-09 1.5707999999999458
+        rotation 1 4.871022583043903e-09 -4.8710455600111294e-09 1.570799999999893
         children [
           DEF WHEEL Shape {
             appearance PBRAppearance {
@@ -117,7 +120,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 -0.26 0
-        rotation 1 5.024853669664443e-09 -5.0248728335602414e-09 1.57079999999994
+        rotation 1 5.0248590472214805e-09 -5.024871616740821e-09 1.5707999999998918
         children [
           USE WHEEL
         ]
@@ -140,7 +143,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 0.26 0
-        rotation 1 -6.161668076289123e-09 6.161688391603015e-09 1.570799999999949
+        rotation 1 -6.161668665072992e-09 6.161689843935877e-09 1.5707999999999027
         children [
           USE WHEEL
         ]
@@ -163,7 +166,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 -0.26 0
-        rotation 1 -5.844827043130671e-09 5.844847727366938e-09 1.5707999999999542
+        rotation 1 -5.844824138465182e-09 5.844845215223617e-09 1.5707999999999156
         children [
           USE WHEEL
         ]
@@ -217,7 +220,7 @@ Robot {
   supervisor TRUE
 }
 Robot {
-  translation 0 0 0.135
+  translation 0 0 -2.98863
   children [
     Emitter {
     }
@@ -1097,4 +1100,9 @@ Robot {
     ]
   }
   controller "mavic_controller"
+}
+Wall {
+  translation 0.155878 0 -3.3
+  rotation 0 1 0 1.0472
+  size 0.2 3 20
 }

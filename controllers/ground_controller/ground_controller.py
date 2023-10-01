@@ -1,5 +1,6 @@
 from controller import Robot, Keyboard, Emitter
 import json
+from csv_logger import CsvLogger
 
 def run_robot(robot):
     timestep = int(robot.getBasicTimeStep())

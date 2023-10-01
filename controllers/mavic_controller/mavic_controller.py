@@ -145,6 +145,7 @@ class Mavic(Robot):
             rollAccel, pitchAccel, yawAccel = self.gyro.getValues()
             xPosition, yPosition, altitude = self.gps.getValues()
             image = np.frombuffer(self.camera.getImage(), dtype=np.uint8).reshape((self.camera.getHeight(), self.camera.getWidth(), 4))
+            #markerId = 0
 
             key = self.keyboard.getKey()
 
@@ -374,6 +375,7 @@ class Mavic(Robot):
                 self.statusHome,
                 self.statusAruco,
                 self.statusLanding,
+                #markerId,
             ]
 
             dlogs = []
@@ -430,4 +432,4 @@ class Mavic(Robot):
 
 
 robot = Mavic()
-robot.run(show=True, log=True, save=True)
+robot.run(show=False, log=True, save=True)
