@@ -46,7 +46,7 @@ def run_robot(robot):
     gps.enable(timestep)
     
     # Accelerometer
-    imu = robot.getDevice("inertial unit ground")
+    imu = robot.getDevice("inertial_unit")
     imu.enable(timestep)
       
     # Distance Sensor

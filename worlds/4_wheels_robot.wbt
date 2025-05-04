@@ -1,4 +1,4 @@
-#VRML_SIM R2023b utf8
+#VRML_SIM R2025a utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
@@ -14,9 +14,9 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.16441195249034138 0.7605679283593586 0.6280964386377839 0.6629548685257637
-  position -37.36795567035433 -20.09272460024777 27.968649084273117
-  followType "None"
+  orientation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0944
+  position -2.0919178297083945e-16 -5.311964225833443e-16 5.465433345958144
+  follow "Mavic 2 PRO"
 }
 TexturedBackground {
 }
@@ -30,6 +30,9 @@ Floor {
 Robot {
   translation 0 0 0.0399049
   children [
+    InertialUnit {
+      name "inertial_unit"
+    }
     Receiver {
       name "receiver_ground"
     }
@@ -116,7 +119,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 -0.26 0
-        rotation 1 5.0248542977002495e-09 -5.024872755055763e-09 1.570799999999945
+        rotation 1 5.02485429770025e-09 -5.024872755055765e-09 1.5707999999999447
         children [
           USE WHEEL
         ]
@@ -217,7 +220,7 @@ Robot {
 }
 Mavic2Pro {
   translation 0 0 0.135
-  controller "mavic_controller"
+  controller "mavic2_controller"
   cameraSlot [
     Camera {
       width 800

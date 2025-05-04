@@ -126,10 +126,11 @@ class Mavic(Robot):
     def find_aruco(self, image):
         self.image = image
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
-        self.aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_250)
-        self.parameters = aruco.DetectorParameters_create()
-        self.markerCorner, self.id, self.reject = aruco.detectMarkers(self.gray, self.aruco_dict, parameters=self.parameters)
-        return self.markerCorner, self.id, self.reject
+        self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
+        self.parameters = aruco.DetectorParameters()
+        self.detector = aruco.ArucoDetector(self.aruco_dict, self.parameters)
+        self.corner, self.id, self.reject = self.detector.detectMarkers(self.gray)
+        return self.corner, self.id, self.reject
 
     def run(self, show=False, log=False, save=False):
         counter = 0
@@ -144,9 +145,12 @@ class Mavic(Robot):
             roll, pitch, yaw = self.imu.getRollPitchYaw()
             rollAccel, pitchAccel, yawAccel = self.gyro.getValues()
             xPosition, yPosition, altitude = self.gps.getValues()
-            image = np.frombuffer(self.camera.getImage(), dtype=np.uint8).reshape((self.camera.getHeight(), self.camera.getWidth(), 4))
+            #image = np.frombuffer(self.camera.getImage(), dtype=np.uint8).reshape((self.camera.getHeight(), self.camera.getWidth(), 4))
             #markerId = 0
-
+            # Read image and create a writable copy
+            image_original = np.frombuffer(self.camera.getImage(), dtype=np.uint8).reshape((self.camera.getHeight(), self.camera.getWidth(), 4))
+            image = image_original.copy()  # Make a writable copy
+    
             key = self.keyboard.getKey()
 
             # Receive data from ground robot

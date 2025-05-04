@@ -1,4 +1,4 @@
-#VRML_SIM R2023b utf8
+#VRML_SIM R2025a utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
@@ -15,9 +15,9 @@ WorldInfo {
   }
 }
 Viewpoint {
-  orientation -0.21241714255107813 0.318701095486171 0.9237470266725353 1.2500700874542623
-  position -11.15985715608925 -38.10367535134466 20.13635221204876
-  followType "None"
+  orientation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0944
+  position -3.932732087891356e-05 -3.932743208647045e-05 12.508855165266567
+  follow "Mavic 2 PRO"
 }
 TexturedBackground {
 }
@@ -32,7 +32,7 @@ Robot {
   translation 0 0 -3.07899
   children [
     InertialUnit {
-      name "inertial unit ground"
+      name "inertial_unit"
     }
     Receiver {
       name "receiver_ground"
@@ -87,7 +87,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 0.26 0
-        rotation 1 4.871022583043903e-09 -4.8710455600111294e-09 1.570799999999893
+        rotation 1 4.871022583043904e-09 -4.87104556001113e-09 1.570799999999893
         children [
           DEF WHEEL Shape {
             appearance PBRAppearance {
@@ -120,7 +120,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.18 -0.26 0
-        rotation 1 5.0248590472214805e-09 -5.024871616740821e-09 1.5707999999998918
+        rotation 1 5.024859047221482e-09 -5.024871616740822e-09 1.5707999999998916
         children [
           USE WHEEL
         ]
@@ -143,7 +143,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.18 0.26 0
-        rotation 1 -6.161668665072992e-09 6.161689843935877e-09 1.5707999999999027
+        rotation 1 -6.161668665072992e-09 6.161689843935878e-09 1.5707999999999027
         children [
           USE WHEEL
         ]
